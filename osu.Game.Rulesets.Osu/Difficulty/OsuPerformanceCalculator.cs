@@ -195,7 +195,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double accOnStreams = 1 - (1 - modifiedAcc) * totalHits / Attributes.StreamNoteCount;
 
             double mashLevel = 1 - SpecialFunctions.Logistic((accOnStreams - 0.75) / 0.1) / SpecialFunctions.Logistic(2.5);
-            
+
             double tapSkill = LinearSpline.InterpolateSorted(Attributes.MashLevels, Attributes.TapSkills)
                               .Interpolate(mashLevel);
 

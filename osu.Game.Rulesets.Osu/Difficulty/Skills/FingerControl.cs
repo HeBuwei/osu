@@ -1,4 +1,7 @@
-﻿using osu.Game.Rulesets.Osu.Objects;
+﻿// Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
+// See the LICENCE file in the repository root for full licence text.
+
+using osu.Game.Rulesets.Osu.Objects;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -12,7 +15,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
         public static double CalculateFingerControlDiff(List<OsuHitObject> hitObjects, double clockRate)
         {
-        
             double prevTime = hitObjects[0].StartTime / 1000.0;
             double currStrain = 0;
             double prevStrainTime = 0;

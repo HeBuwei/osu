@@ -244,7 +244,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             return partTP;
         }
-       
 
         private static double calculateFCProb(IEnumerable<OsuMovement> movements, double tp, double cheeseLevel)
         {
