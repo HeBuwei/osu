@@ -1,4 +1,7 @@
-﻿using MathNet.Numerics;
+﻿// Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
+// See the LICENCE file in the repository root for full licence text.
+
+using MathNet.Numerics;
 using MathNet.Numerics.LinearAlgebra;
 using osu.Game.Rulesets.Osu.Difficulty.MathUtil;
 using osu.Game.Rulesets.Osu.Objects;
@@ -141,6 +144,5 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         {
             return SpecialFunctions.Logistic((d - 0.5) * 10) - SpecialFunctions.Logistic(-5);
         }
-	        
     }
 }
