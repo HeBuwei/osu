@@ -13,7 +13,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
     {
 
         private const int mashLevelCount = 11;
-        private const double spacedBuffFactor = 0.08;
+        private const double spacedBuffFactor = 0.04;
 
         private static readonly Vector<double> decayCoeffs = Vector<double>.Build.Dense(Generate.LinearSpaced(4, 2.3, -2.8))
                                                                                  .PointwiseExp();
