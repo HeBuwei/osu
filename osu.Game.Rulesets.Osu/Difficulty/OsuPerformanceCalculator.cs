@@ -276,8 +276,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             // preserving the value when accOnCircles is close to 1
             double accOnCirclesPositive = Math.Exp(accOnCircles - 1);
 
-            // add 20 to greatWindow to nerf high OD
-            double deviationOnCircles = (greatWindow + 20) / (Math.Sqrt(2) * SpecialFunctions.ErfInv(accOnCirclesPositive));
+            // nerf high OD based on the fcontrol sr
+            double ODnerf = 50.0 / (fingerControlDiff + 2.0) + 15.0;
+            double deviationOnCircles = (greatWindow + ODnerf) / (Math.Sqrt(2) * SpecialFunctions.ErfInv(accOnCirclesPositive));
             double accuracyValue = Math.Pow(deviationOnCircles, -2.2) * 46000;
 
             // scale acc pp with misses
