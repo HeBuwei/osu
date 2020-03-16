@@ -148,9 +148,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
             int extraNestedCount = obj.NestedHitObjects.Count - 1;
 
             for (int i = 0; i < extraNestedCount; i++)
-            {
                 movementWithNested.Add(GetEmptyMovement(movement.Time));
-            }
 
             return movementWithNested;
         }
@@ -224,9 +222,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
                     if (tRatio0 > tRatioThreshold)
                     {
                         if (d01 == 0)
-                        {
                             correction0 = correction0Still;
-                        }
                         else
                         {
                             double cos012 = Math.Min(Math.Max(-s01.DotProduct(s12) / d01 / d12, -1), 1);
@@ -239,9 +235,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
                     else if (tRatio0 < 1 / tRatioThreshold)
                     {
                         if (d01 == 0)
-                        {
                             correction0 = 0;
-                        }
                         else
                         {
                             double cos012 = Math.Min(Math.Max(-s01.DotProduct(s12) / d01 / d12, -1), 1);
@@ -285,9 +279,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
                     if (tRatio3 > tRatioThreshold)
                     {
                         if (d23 == 0)
-                        {
                             correction3 = 0;
-                        }
                         else
                         {
                             double cos123 = Math.Min(Math.Max(-s12.DotProduct(s23) / d12 / d23, -1), 1);
@@ -301,9 +293,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
                     else if (tRatio3 < 1 / tRatioThreshold)
                     {
                         if (d23 == 0)
-                        {
                             correction3 = 0;
-                        }
                         else
                         {
                             double cos123 = Math.Min(Math.Max(-s12.DotProduct(s23) / d12 / d23, -1), 1);
@@ -349,9 +339,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
             double tapCorrection = 0;
 
             if (d12 > 0 && tapStrain != null)
-            {
                 tapCorrection = SpecialFunctions.Logistic((Mean.PowerMean(tapStrain, 2) / IP12 - 1.34) / 0.1) * 0.3;
-            }
 
             // Correction #5 - Cheesing
             // The player might make the movement of obj1 -> obj2 easier by 
@@ -397,8 +385,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
 
             // Correction #6 - High bpm jump buff (alt buff)
             double effectiveBpm = 30 / (t12 + 1e-10);
-            double highBpmJumpBuff = SpecialFunctions.Logistic((effectiveBpm - 370) / 16) *
-                                     SpecialFunctions.Logistic((d12 - 1.9) / 0.15) * 0.23;
+            double highBpmJumpBuff = SpecialFunctions.Logistic((effectiveBpm - 340) / 16) *
+                                     SpecialFunctions.Logistic((d12 - 1.9) / 0.15) * 0.2;
 
 
             // Correction #7 - Small circle bonus
@@ -417,9 +405,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
             // Correction #9 - Hidden Mod
             double correctionHidden = 0;
             if (hidden)
-            {
                 correctionHidden = 0.05 + 0.008 * noteDensity;
-            }
 
 
             // Correction #10 - Stacked wiggle fix
@@ -453,9 +439,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
             int extraNestedCount = obj2.NestedHitObjects.Count - 1;
 
             for (int i = 0; i < extraNestedCount; i++)
-            {
                 movementWithNested.Add(GetEmptyMovement(movement.Time));
-            }
 
             return movementWithNested;
         }

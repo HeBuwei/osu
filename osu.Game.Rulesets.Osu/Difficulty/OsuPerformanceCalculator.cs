@@ -278,7 +278,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
 
             // add 20 to greatWindow to nerf high OD
             double deviationOnCircles = (greatWindow + 20) / (Math.Sqrt(2) * SpecialFunctions.ErfInv(accOnCirclesPositive));
-            double accuracyValue = Math.Pow(deviationOnCircles, -2.2) * Math.Pow(fingerControlDiff, 0.5) * 46000;
+            double accuracyValue = Math.Pow(deviationOnCircles, -2.2) * 46000;
 
             // scale acc pp with misses
             accuracyValue *= Math.Pow(0.96, effectiveMissCount);
@@ -286,6 +286,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             // nerf short maps
             double lengthFactor = SpecialFunctions.Logistic(Attributes.Length / 60.0);
             accuracyValue *= lengthFactor;
+
+            // scale acc pp with finger control
+            accuracyValue *= Math.Pow(0.123 * fingerControlDiff + 1.0, 2.0);
 
             if (mods.Any(m => m is OsuModHidden))
                 accuracyValue *= 1.08;
