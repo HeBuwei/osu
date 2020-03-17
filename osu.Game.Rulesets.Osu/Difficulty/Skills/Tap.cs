@@ -66,7 +66,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
                     currStrain += decayCoeffs * currStrainBase * 
                                   Math.Pow(calculateMashNerfFactor(relativeD, mashLevel), 3) *
-                                  Math.Pow(1 + spacedBuff, 3) * 
                                   Math.Pow(1 + fingerStrains[i], 0.6);
 
                     prevPrevTime = prevTime;
