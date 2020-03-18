@@ -30,7 +30,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             return fractionSpline.Interpolate(fraction);
         }
 
-        private static (double, bool) checkAnomaly(OsuHitObject current, List<double> refNoteHistory)
+        private static (double, bool) checkAnomaly(List<double> refNoteHistory)
         {
             List<double> uniqueStrains = new List<double>();
 
@@ -82,10 +82,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             return ((double)uniqueStrains.Count, false); 
         }
 
-        private static double calculateExpectancy(OsuHitObject current, List<double> refNoteHistory)
+        private static double calculateExpectancy(List<double> refNoteHistory)
         {
             // See how many unique strains there are, and get a nerfed version of the straintime
-            (double anomalyVal, bool exists) = checkAnomaly(current, refNoteHistory);
+            (double anomalyVal, bool exists) = checkAnomaly(refNoteHistory);
 
             refNoteHistory.Reverse();
 
@@ -229,8 +229,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             double uniqueScale = 1;
             if (noteHistory.Count > 2)
             {
-                double repetition = 1.0 - calculateExpectancy(current, noteHistory);
-                double virtualRepetition = 1.0 - calculateExpectancy(current, noteHistoryVirtual);
+                double repetition = 1.0 - calculateExpectancy(noteHistory);
+                double virtualRepetition = 1.0 - calculateExpectancy(noteHistoryVirtual);
                 double repetitionExponent = Math.Min(2.0, 48.75 * Math.Min(strainTime, virtualStrainTime) - 1.65625);
                 repetitionVal = Math.Pow(Math.Min(repetition, virtualRepetition), repetitionExponent);
 
@@ -241,8 +241,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 appearanceScale = Math.Min(strainAppearance(strainTime, noteHistory), strainAppearance(virtualStrainTime, noteHistoryVirtual));
 
                 // When there's a ton of unique strains that means that it's a wild BPM area
-                (double uniqueVal, _) = checkAnomaly(current, noteHistory);
-                (double virtualUniqueVal, _) = checkAnomaly(current, noteHistory);
+                (double uniqueVal, _) = checkAnomaly(noteHistory);
+                (double virtualUniqueVal, _) = checkAnomaly(noteHistoryVirtual);
                 uniqueScale = 1.0 + Math.Pow((Math.Min(uniqueVal, virtualUniqueVal) - 1.0) / 11.0, 4.0);
             }
 
@@ -253,10 +253,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             return repetitionVal * multiplier * downtimeScale * appearanceScale * uniqueScale / strainTime;
         }
-        public static (double, string, List<double>) CalculateFingerControlDiff(List<OsuHitObject> hitObjects, double clockRate)
+        public static (double, List<double>) CalculateFingerControlDiff(List<OsuHitObject> hitObjects, double clockRate)
         {
             if (hitObjects.Count == 0)
-                return (0, "", new List<double>());
+                return (0, new List<double>());
 
             // Refresh
             noteHistory = new List<double>();
@@ -268,7 +268,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             double currStrain = 0;
             List<double> strainHistory = new List<double> { 0 };
             List<double> specificStrainHistory = new List<double> { 0 };
-            var sw = new StringWriter();
 
             for (int i = 1; i < hitObjects.Count; i++)
             {
@@ -306,8 +305,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 
                 currStrain += strain;
 
-                sw.WriteLine($"{currTime} {currStrain} {strain}");
-
                 if (deltaTime > 0.035)
                 {
                     prevTime = currTime;
@@ -315,9 +312,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                     prevVirtualStrainTime = virtualStrainTime;
                 }
             }
-
-            string graphText = sw.ToString();
-            sw.Dispose();
 
             var strainHistoryArray = strainHistory.ToArray();
 
@@ -330,7 +324,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             for (int i = 0; i < hitObjects.Count; i++)
                 diff += strainHistoryArray[i] * Math.Pow(k, i);
 
-            return (diff * (1 - k), graphText, specificStrainHistory);
+            return (diff * (1 - k), specificStrainHistory);
         }
     }
 }
