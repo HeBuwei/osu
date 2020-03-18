@@ -50,46 +50,42 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
         private static readonly double[] ds0s = { 0, 1.5, 2.5, 4, 6, 8 };
         private static readonly double[] ks0s = { -1, -5, -6.7, -6.5, -4.3, -4.3 };
         private static readonly double[] scales0s = { 1, 0.85, 0.4, 0.8, 1, 1 };
-        private static readonly double[,,] coeffs0s = new double[,,]  {{{ 0.5 ,  2   ,  3   ,  5   ,  5   ,  5   },
+        private static readonly double[,,] coeffs0s = new double[,,]  {{{ 0.5 ,  2   ,  2.8 ,  5   ,  5   ,  5   },
                                                                         { 0   ,  0   ,  0   ,  0   ,  0   ,  0   },
-                                                                        { 1   ,  1   ,  1   ,  1   ,  0   ,  0   },
-                                                                        { 0.6 ,  0.6 ,  0.8 ,  0.8 ,  0.2 ,  0.2 }},
-                                                                       {{ 0.25,  1   ,  1.2 ,  2   ,  2   ,  2   },
-                                                                        { 0.5 ,  2   ,  2.2 ,  3   ,  6   ,  6   },
+                                                                        { 1   ,  1   ,  1   ,  0   ,  0   ,  0   },
+                                                                        { 0.6 ,  1   ,  0.8 ,  0.6 ,  0.2 ,  0.2 }},
+                                                                       {{ 0.25,  1   ,  0.7 ,  2   ,  2   ,  2   },
+                                                                        { 0.5 ,  2   ,  2.8 ,  4   ,  6   ,  6   },
                                                                         { 1   ,  1   ,  1   ,  1   ,  1   ,  1   },
-                                                                        { 0.6 ,  0.6 ,  0.7 ,  0.3 ,  0.2 ,  0.2 }},
-                                                                       {{ 0.25,  1   ,  1.2 ,  2   ,  2   ,  2   },
-                                                                        {-0.5 , -2   , -2.2 , -3   , -6   , -6   },
+                                                                        { 0.6 ,  1   ,  0.8 ,  0.3 ,  0.2 ,  0.2 }},
+                                                                       {{ 0.25,  1   ,  0.7 ,  2   ,  2   ,  2   },
+                                                                        {-0.5 , -2   , -2.8 , -4   , -6   , -6   },
                                                                         { 1   ,  1   ,  1   ,  1   ,  1   ,  1   },
-                                                                        { 0.6 ,  0.6 ,  0.7 ,  0.3 ,  0.2 ,  0.2 }},
-                                                                       {{ 0   ,  0   , -0.8 , -2   , -3   , -3   },
+                                                                        { 0.6 ,  1   ,  0.8 ,  0.3 ,  0.2 ,  0.2 }},
+                                                                       {{ 0   ,  0   , -0.5 , -2   , -3   , -3   },
                                                                         { 0   ,  0   ,  0   ,  0   ,  0   ,  0   },
                                                                         { 1   ,  1   ,  1   ,  1   ,  1   ,  1   },
-                                                                        {-0.7 , -0.7 , -0.5 , -0.1 , -0.1 , -0.1 }}};
+                                                                        {-0.7 , -1   , -0.9 , -0.1 , -0.1 , -0.1 }}};
 
-        private static readonly double[] ds3f = { 0, 1, 1.7, 2.3, 3 };
-        private static readonly double[] ks3f = { -11.5, -5.6, -5.6, -2, -2 };
-        private static readonly double[] scales3f = { 1, 1, 0.9, 1, 1 };
-        private static readonly double[,,] coeffs3f = new double[,,]  {{{ 0   ,  1   ,  1.8 ,  2   ,  2   },
-                                                                        { 0   ,  0   ,  0   ,  0   ,  0   },
-                                                                        { 1   ,  1   ,  1   ,  1   ,  1   },
-                                                                        { 6   ,  1   ,  1   ,  1   ,  1   }},
-                                                                       {{ 0   ,  1   ,  1   ,  1   ,  1   },
-                                                                        { 0   ,  0.1 ,  1   ,  2   ,  2   },
-                                                                        { 1   ,  1   ,  0.3 ,  0   ,  0   },
-                                                                        { 3   ,  0.7 ,  0.7 ,  1   ,  1   }},
-                                                                       {{ 0   ,  1   ,  1   ,  1   ,  1   },
-                                                                        { 0   , -0.1 , -1   , -2   , -2   },
-                                                                        { 1   ,  1   ,  0.3 ,  0   ,  0   },
-                                                                        { 3   ,  0.7 ,  0.7 ,  1   ,  1   }},
-                                                                       {{ 0   ,  0   ,  0   ,  0   ,  0   },
-                                                                        { 0   ,  0.2 ,  1   ,  0   ,  0   },
-                                                                        { 0   ,  0   ,  0   ,  0   ,  0   },
-                                                                        { 0   ,  1   ,  0.4 ,  0   ,  0   }},
-                                                                       {{ 0   ,  0   ,  0   ,  0   ,  0   },
-                                                                        { 0   , -0.2 , -1   ,  0   ,  0   },
-                                                                        { 0   ,  0   ,  0   ,  0   ,  0   },
-                                                                        { 0   ,  1   ,  0.4 ,  0   ,  0   }}};
+        private static readonly double[] ds3f = { 0, 1, 2, 3, 4 };
+        private static readonly double[] ks3f = { -4, -5.3, -5.2, -2.5, -2.5 };
+        private static readonly double[] scales3f = { 1, 1, 1, 1, 1 };
+        private static readonly double[,,] coeffs3f = new double[,,]  {{{0   ,  1.2 ,  2   ,  2   ,  2  },
+                                                                        {0   ,  0   ,  0   ,  0   ,  0  },
+                                                                        {0   ,  0   ,  0   ,  0   ,  0  },
+                                                                        {1.5 ,  1   ,  0.4 ,  0   ,  0  }},
+                                                                       {{0   ,  0   ,  0   ,  0   ,  0  },
+                                                                        {0   ,  0   ,  0   ,  0   ,  0  },
+                                                                        {0   ,  0   ,  0   ,  0   ,  0  },
+                                                                        {2   ,  1.5 ,  2.5 ,  3.5 ,  3.5}},
+                                                                       {{0   ,  0.3 ,  0.6 ,  0.6 ,  0.6},
+                                                                        {0   ,  1   ,  2.4 ,  2.4 ,  2.4},
+                                                                        {0   ,  0   ,  0   ,  0   ,  0  },
+                                                                        {0   ,  0.4 ,  0.4 ,  0   ,  0  }},
+                                                                       {{0   ,  0.3 ,  0.6 ,  0.6 ,  0.6},
+                                                                        {0   , -1   , -2.4 , -2.4 , -2.4},
+                                                                        {0   ,  0   ,  0   ,  0   ,  0  },
+                                                                        {0   ,  0.4 ,  0.4 ,  0   ,  0  }}};
 
         private static readonly double[] ds3s = { 1, 1.5, 2.5, 4, 6, 8 };
         private static readonly double[] ks3s = { -2, -2, -3, -5.4, -4.9, -4.9 };
@@ -260,7 +256,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
 
                         flowiness012 = SpecialFunctions.Logistic((correction0Snap - correction0Flow - 0.05) * 20);
 
-                        correction0 = Mean.PowerMean(correction0Flow, correction0Snap, -10);
+                        correction0 = Mean.PowerMean(new double[] { correction0Flow, correction0Snap, correction0Stop }, -10) * 1.3;
                     }
                 }
             }
@@ -317,7 +313,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
 
                         flowiness123 = SpecialFunctions.Logistic((correction3Snap - correction3Flow - 0.05) * 20);
 
-                        correction3 = Mean.PowerMean(correction3Flow, correction3Snap, -10);
+                        correction3 = Math.Max(Mean.PowerMean(correction3Flow, correction3Snap, -10) - 0.1, 0) * 0.5;
 
                     }
                 }
