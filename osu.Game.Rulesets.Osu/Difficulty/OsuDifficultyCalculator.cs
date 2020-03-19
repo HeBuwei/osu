@@ -51,7 +51,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             (double fingerControlDiff, List<double> fingerStrainHistory) = FingerControl.CalculateFingerControlDiff(hitObjects, clockRate);
 
             // Tap
-            (var tapDiff, var streamNoteCount, var mashLevels, var tapSkills, var strainHistory) =
+            (var tapDiff, var streamNoteCount, var mashLevels, var tapSkills, var strainHistory, var graphTextTap) =
                 Tap.CalculateTapAttributes(hitObjects, clockRate, fingerStrainHistory);
 
             // Aim
@@ -62,6 +62,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             // graph for aim
             string graphFilePath = Path.Combine("cache", $"graph_{beatmap.BeatmapInfo.OnlineBeatmapID}_{string.Join(string.Empty, mods.Select(x => x.Acronym))}.txt");
             File.WriteAllText(graphFilePath, graphText);
+
+            // graph for tap
+            string graphFilePathTap = Path.Combine("cache", $"graph_{beatmap.BeatmapInfo.OnlineBeatmapID}_{string.Join(string.Empty, mods.Select(x => x.Acronym))}_tap.txt");
+            File.WriteAllText(graphFilePathTap, graphTextTap);
 
             double tapSR = tapMultiplier * Math.Pow(tapDiff, srExponent);
             double aimSR = aimMultiplier * Math.Pow(aimDiff, srExponent);

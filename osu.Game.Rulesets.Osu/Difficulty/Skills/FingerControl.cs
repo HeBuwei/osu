@@ -1,6 +1,5 @@
 ﻿using osu.Game.Rulesets.Osu.Objects;
 using System;
-using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using MathNet.Numerics.Interpolation;
