@@ -72,7 +72,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
                     currStrain += decayCoeffs * strain;
 
-                    sw.WriteLine($"{currTime} {currStrain} {strain}");
+                    sw.WriteLine($"{currTime} {currStrain[0]} {currStrain[1]} {currStrain[2]} {currStrain[3]} {strain}");
 
                     prevPrevTime = prevTime;
                     prevTime = currTime;

@@ -1,5 +1,6 @@
 ﻿using osu.Game.Rulesets.Osu.Objects;
 using System;
+using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using MathNet.Numerics.Interpolation;
@@ -252,10 +253,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             return repetitionVal * multiplier * downtimeScale * appearanceScale * uniqueScale / strainTime;
         }
-        public static (double, List<double>) CalculateFingerControlDiff(List<OsuHitObject> hitObjects, double clockRate)
+        public static (double, string, List<double>) CalculateFingerControlDiff(List<OsuHitObject> hitObjects, double clockRate)
         {
             if (hitObjects.Count == 0)
-                return (0, new List<double>());
+                return (0, "", new List<double>());
 
             // Refresh
             noteHistory = new List<double>();
@@ -267,6 +268,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             double currStrain = 0;
             List<double> strainHistory = new List<double> { 0 };
             List<double> specificStrainHistory = new List<double> { 0 };
+            var sw = new StringWriter();
 
             for (int i = 1; i < hitObjects.Count; i++)
             {
@@ -304,6 +306,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 
                 currStrain += strain;
 
+                sw.WriteLine($"{currTime} {currStrain} {strain}");
+
                 if (deltaTime > 0.035)
                 {
                     prevTime = currTime;
@@ -311,6 +315,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                     prevVirtualStrainTime = virtualStrainTime;
                 }
             }
+
+            string graphText = sw.ToString();
+            sw.Dispose();
 
             var strainHistoryArray = strainHistory.ToArray();
 
@@ -323,7 +330,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             for (int i = 0; i < hitObjects.Count; i++)
                 diff += strainHistoryArray[i] * Math.Pow(k, i);
 
-            return (diff * (1 - k), specificStrainHistory);
+            return (diff * (1 - k), graphText, specificStrainHistory);
         }
     }
 }
