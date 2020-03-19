@@ -308,9 +308,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
                 sw.WriteLine($"{currTime} {currStrain} {strain}");
 
+                prevTime = currTime;
+                
                 if (deltaTime > 0.035)
                 {
-                    prevTime = currTime;
                     prevStrainTime = strainTime;
                     prevVirtualStrainTime = virtualStrainTime;
                 }

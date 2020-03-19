@@ -56,12 +56,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 {
                     double currTime = hitObjects[i].StartTime / 1000.0;
                     currStrain = currStrain.PointwiseMultiply((-decayCoeffs * (currTime - prevTime) / clockRate).PointwiseExp());
-                    strainHistory.Add(currStrain.PointwisePower(1.1 / 3) * 1.5);
+                    strainHistory.Add(currStrain.PointwisePower(1.1 / 3) * 1.05);
 
                     double relativeD = (hitObjects[i].Position - hitObjects[i - 1].Position).Length / (2 * hitObjects[i].Radius);
                     double spacedBuff = calculateSpacedness(relativeD) * spacedBuffFactor;
 
-                    double deltaTime = Math.Max((currTime - prevPrevTime) / clockRate, 0.01);
+                    double deltaTime = Math.Max((currTime - prevPrevTime) / clockRate, 1.0 / 12.0);
 
                     // for 1/4 notes above 200 bpm the exponent is -2.7, otherwise it's -2
                     double currStrainBase = Math.Max(Math.Pow(deltaTime, -2.7) * 0.265, Math.Pow(deltaTime, -2));
@@ -94,7 +94,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 Array.Reverse(singleStrainHistory);
 
                 double singleStrainResult = 0;
-                double k = 1 / Math.Log(1.03, 2);
+                double k = 1 / Math.Log(0.999 + 0.026 * Math.Sqrt(decayCoeffs[j]), 2);
 
                 for (int i = 0; i < hitObjects.Count; i++)
                 {
