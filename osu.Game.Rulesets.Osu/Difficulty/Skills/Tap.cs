@@ -44,7 +44,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                                                                                  List<double> fingerStrains)
         {
             var strainHistory = new List<Vector<double>> { decayCoeffs * 0, decayCoeffs * 0 };
-            var currStrain = decayCoeffs * 1;
+            var currStrain = decayCoeffs;
             var sw = new StringWriter();
 
             if (hitObjects.Count >= 2)
@@ -56,7 +56,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 {
                     double currTime = hitObjects[i].StartTime / 1000.0;
                     currStrain = currStrain.PointwiseMultiply((-decayCoeffs * (currTime - prevTime) / clockRate).PointwiseExp());
-                    strainHistory.Add(currStrain.PointwisePower(1.1 / 3) * 1.05);
+                    strainHistory.Add(currStrain.PointwisePower(1.1 / 3));
 
                     double relativeD = (hitObjects[i].Position - hitObjects[i - 1].Position).Length / (2 * hitObjects[i].Radius);
                     double spacedBuff = calculateSpacedness(relativeD) * spacedBuffFactor;
@@ -86,25 +86,21 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 double[] singleStrainHistory = new double[hitObjects.Count];
 
                 for (int i = 0; i < hitObjects.Count; i++)
-                {
                     singleStrainHistory[i] = strainHistory[i][j];
-                }
 
                 Array.Sort(singleStrainHistory);
                 Array.Reverse(singleStrainHistory);
 
                 double singleStrainResult = 0;
-                double k = 1 / Math.Log(0.999 + 0.026 * Math.Sqrt(decayCoeffs[j]), 2);
+                double k = 1 / Math.Log(1.07, 2);
 
                 for (int i = 0; i < hitObjects.Count; i++)
-                {
                     singleStrainResult += Math.Pow(singleStrainHistory[i], k);
-                }
 
                 strainResult[j] = Math.Pow(singleStrainResult, 1.0 / k) * timescaleFactors[j];
             }
 
-            double diff = Mean.PowerMean(strainResult, 6);
+            double diff = Mean.PowerMean(strainResult, 2);
 
             string graphText = sw.ToString();
             sw.Dispose();
