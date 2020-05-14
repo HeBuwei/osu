@@ -421,7 +421,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
                                              SpecialFunctions.Logistic((255 - effectiveBpm) / 10);
 
             // Correction #10 - Slow big jump buff
-            double bigJumpBuffFactor = 1 + 0.15 * SpecialFunctions.Logistic((d12 - 6) / 0.5) *
+            double bigJumpBuffFactor = 1 + 0.3 * SpecialFunctions.Logistic((d12 - 6) / 0.5) *
                                            SpecialFunctions.Logistic((210 - effectiveBpm) / 8);
 
             // Correction #11 - Hidden Mod
