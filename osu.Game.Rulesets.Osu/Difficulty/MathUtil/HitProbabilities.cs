@@ -151,8 +151,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.MathUtil
 
                 foreach (OsuMovement movement in Movements)
                 {
-                    double hitProb = CalculateCheeseHitProb(movement, tp, cheeseLevel)+1e-10;
-                    hitProb = 1 - (Math.Sqrt(1 - hitProb + 0.25) - 0.5);
+                    double missProb = 1 - CalculateCheeseHitProb(movement, tp, cheeseLevel);
+                    double k = 0.5;
+                    missProb = Math.Sqrt(k * (missProb + k / 4)) - k / 2;
+                    double hitProb = 1 - missProb;
                     result.ExpectedTime = (result.ExpectedTime + movement.RawMT) / hitProb;
                     result.FcProbability *= hitProb;
                 }
