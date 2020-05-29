@@ -5,14 +5,15 @@ using osu.Game.Beatmaps;
 using osu.Game.Rulesets.Edit;
 using osu.Game.Rulesets.Edit.Tools;
 using osu.Game.Rulesets.Mania.Objects;
-using osu.Game.Rulesets.Mania.Objects.Drawables;
-using osu.Game.Rulesets.Objects.Drawables;
 using System.Collections.Generic;
+using System.Linq;
 using osu.Framework.Allocation;
-using osu.Game.Rulesets.Mania.Edit.Blueprints;
+using osu.Framework.Input;
 using osu.Game.Rulesets.Mania.UI;
 using osu.Game.Rulesets.Mods;
+using osu.Game.Rulesets.Objects;
 using osu.Game.Rulesets.UI;
+using osu.Game.Rulesets.UI.Scrolling;
 using osu.Game.Screens.Edit.Compose.Components;
 using osuTK;
 
@@ -22,27 +23,55 @@ namespace osu.Game.Rulesets.Mania.Edit
     public class ManiaHitObjectComposer : HitObjectComposer<ManiaHitObject>, IManiaHitObjectComposer
     {
         private DrawableManiaEditRuleset drawableRuleset;
+        private ManiaBeatSnapGrid beatSnapGrid;
+        private InputManager inputManager;
 
         public ManiaHitObjectComposer(Ruleset ruleset)
             : base(ruleset)
         {
         }
 
-        /// <summary>
-        /// Retrieves the column that intersects a screen-space position.
-        /// </summary>
-        /// <param name="screenSpacePosition">The screen-space position.</param>
-        /// <returns>The column which intersects with <paramref name="screenSpacePosition"/>.</returns>
-        public Column ColumnAt(Vector2 screenSpacePosition) => drawableRuleset.GetColumnByPosition(screenSpacePosition);
+        [BackgroundDependencyLoader]
+        private void load()
+        {
+            AddInternal(beatSnapGrid = new ManiaBeatSnapGrid());
+        }
+
+        protected override void LoadComplete()
+        {
+            base.LoadComplete();
+
+            inputManager = GetContainingInputManager();
+        }
 
         private DependencyContainer dependencies;
 
         protected override IReadOnlyDependencyContainer CreateChildDependencies(IReadOnlyDependencyContainer parent)
             => dependencies = new DependencyContainer(base.CreateChildDependencies(parent));
 
-        public int TotalColumns => ((ManiaPlayfield)drawableRuleset.Playfield).TotalColumns;
+        public ManiaPlayfield Playfield => ((ManiaPlayfield)drawableRuleset.Playfield);
 
-        protected override DrawableRuleset<ManiaHitObject> CreateDrawableRuleset(Ruleset ruleset, IWorkingBeatmap beatmap, IReadOnlyList<Mod> mods)
+        public IScrollingInfo ScrollingInfo => drawableRuleset.ScrollingInfo;
+
+        public override SnapResult SnapScreenSpacePositionToValidTime(Vector2 screenSpacePosition)
+        {
+            var column = Playfield.GetColumnByPosition(screenSpacePosition);
+
+            if (column == null)
+                return new SnapResult(screenSpacePosition, null);
+
+            double targetTime = column.TimeAtScreenSpacePosition(screenSpacePosition);
+
+            // apply beat snapping
+            targetTime = BeatSnapProvider.SnapTime(targetTime);
+
+            // convert back to screen space
+            screenSpacePosition = column.ScreenSpacePositionAtTime(targetTime);
+
+            return new ManiaSnapResult(screenSpacePosition, targetTime, column);
+        }
+
+        protected override DrawableRuleset<ManiaHitObject> CreateDrawableRuleset(Ruleset ruleset, IBeatmap beatmap, IReadOnlyList<Mod> mods = null)
         {
             drawableRuleset = new DrawableManiaEditRuleset(ruleset, beatmap, mods);
 
@@ -52,26 +81,35 @@ namespace osu.Game.Rulesets.Mania.Edit
             return drawableRuleset;
         }
 
+        protected override ComposeBlueprintContainer CreateBlueprintContainer() => new ManiaBlueprintContainer(drawableRuleset.Playfield.AllHitObjects);
+
         protected override IReadOnlyList<HitObjectCompositionTool> CompositionTools => new HitObjectCompositionTool[]
         {
             new NoteCompositionTool(),
             new HoldNoteCompositionTool()
         };
 
-        public override SelectionHandler CreateSelectionHandler() => new ManiaSelectionHandler();
-
-        public override SelectionBlueprint CreateBlueprintFor(DrawableHitObject hitObject)
+        protected override void UpdateAfterChildren()
         {
-            switch (hitObject)
+            base.UpdateAfterChildren();
+
+            if (BlueprintContainer.CurrentTool is SelectTool)
             {
-                case DrawableNote note:
-                    return new NoteSelectionBlueprint(note);
-
-                case DrawableHoldNote holdNote:
-                    return new HoldNoteSelectionBlueprint(holdNote);
+                if (EditorBeatmap.SelectedHitObjects.Any())
+                {
+                    beatSnapGrid.SelectionTimeRange = (EditorBeatmap.SelectedHitObjects.Min(h => h.StartTime), EditorBeatmap.SelectedHitObjects.Max(h => h.GetEndTime()));
+                }
+                else
+                    beatSnapGrid.SelectionTimeRange = null;
             }
-
-            return base.CreateBlueprintFor(hitObject);
+            else
+            {
+                var result = SnapScreenSpacePositionToValidTime(inputManager.CurrentState.Mouse.Position);
+                if (result.Time is double time)
+                    beatSnapGrid.SelectionTimeRange = (time, time);
+                else
+                    beatSnapGrid.SelectionTimeRange = null;
+            }
         }
     }
 }

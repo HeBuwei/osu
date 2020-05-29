@@ -7,7 +7,7 @@ using MathNet.Numerics.Interpolation;
 
 namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 {
-    class FingerControl
+    public static class FingerControl
     {
         private const double strainMultiplier = 1.3;
         private const double repetitionWeight = 0.7;
@@ -286,6 +286,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             List<double> specificStrainHistory = new List<double> { 0 };
             var sw = new StringWriter();
 
+            // calculate strain value for each hit object
             for (int i = 1; i < hitObjects.Count; i++)
             {
                 double currTime = hitObjects[i].StartTime / 1000.0;

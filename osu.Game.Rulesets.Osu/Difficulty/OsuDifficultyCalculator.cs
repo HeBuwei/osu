@@ -4,32 +4,30 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-
-using MathNet.Numerics;
-using MathNet.Numerics.LinearAlgebra;
+using System.IO;
 
 using osu.Game.Beatmaps;
 using osu.Game.Rulesets.Difficulty;
 using osu.Game.Rulesets.Difficulty.Preprocessing;
 using osu.Game.Rulesets.Difficulty.Skills;
 using osu.Game.Rulesets.Mods;
-using osu.Game.Rulesets.Objects;
 using osu.Game.Rulesets.Osu.Difficulty.Preprocessing;
 using osu.Game.Rulesets.Osu.Difficulty.Skills;
 using osu.Game.Rulesets.Osu.Mods;
 using osu.Game.Rulesets.Osu.Objects;
 using osu.Game.Rulesets.Osu.Difficulty.MathUtil;
-using System.IO;
+using osu.Game.Rulesets.Osu.Scoring;
+using osu.Game.Rulesets.Scoring;
 
 namespace osu.Game.Rulesets.Osu.Difficulty
 {
     public class OsuDifficultyCalculator : DifficultyCalculator
     {
-        private const double aimMultiplier = 0.515;
-        private const double tapMultiplier = 0.515;
-        private const double fingerControlMultiplier = 1;
-        
-        private const double srExponent = 0.9;
+        private const double aim_multiplier = 0.641;
+        private const double tap_multiplier = 0.641;
+        private const double finger_control_multiplier = 1.245;
+
+        private const double sr_exponent = 0.83;
 
         public OsuDifficultyCalculator(Ruleset ruleset, WorkingBeatmap beatmap)
             : base(ruleset, beatmap)
@@ -51,7 +49,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             (double fingerControlDiff, string fingerGraph, List<double> fingerStrainHistory) = FingerControl.CalculateFingerControlDiff(hitObjects, clockRate);
 
             // Tap
-            (var tapDiff, var streamNoteCount, var mashLevels, var tapSkills, var strainHistory, var graphTextTap) =
+            (var tapDiff, var streamNoteCount, var mashTapDiff, var strainHistory, var graphTextTap) =
                 Tap.CalculateTapAttributes(hitObjects, clockRate, fingerStrainHistory);
 
             // Aim
@@ -71,16 +69,16 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             string graphFingerFilePath = Path.Combine("cache", $"graph_{beatmap.BeatmapInfo.OnlineBeatmapID}_{string.Join(string.Empty, mods.Select(x => x.Acronym))}_finger.txt");
             File.WriteAllText(graphFingerFilePath, fingerGraph);
 
-            double tapSR = tapMultiplier * Math.Pow(tapDiff, srExponent);
-            double aimSR = aimMultiplier * Math.Pow(aimDiff, srExponent);
-            double fingerControlSR = fingerControlMultiplier * Math.Pow(fingerControlDiff, srExponent);
+            double tapSR = tap_multiplier * Math.Pow(tapDiff, sr_exponent);
+            double aimSR = aim_multiplier * Math.Pow(aimDiff, sr_exponent);
+            double fingerControlSR = finger_control_multiplier * Math.Pow(fingerControlDiff, sr_exponent);
             double sr = Mean.PowerMean(new double[] { tapSR, aimSR, fingerControlSR }, 7) * 1.131;
 
             HitWindows hitWindows = new OsuHitWindows();
             hitWindows.SetDifficulty(beatmap.BeatmapInfo.BaseDifficulty.OverallDifficulty);
 
             // Todo: These int casts are temporary to achieve 1:1 results with osu!stable, and should be removed in the future
-            double hitWindowGreat = (int)(hitWindows.Great / 2) / clockRate;
+            double hitWindowGreat = (int)(hitWindows.WindowFor(HitResult.Great)) / clockRate;
             double preempt = (int)BeatmapDifficulty.DifficultyRange(beatmap.BeatmapInfo.BaseDifficulty.ApproachRate, 1800, 1200, 450) / clockRate;
 
             int maxCombo = beatmap.HitObjects.Count;
@@ -96,8 +94,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 TapSR = tapSR,
                 TapDiff = tapDiff,
                 StreamNoteCount = streamNoteCount,
-                MashLevels = mashLevels,
-                TapSkills = tapSkills,
+                MashTapDiff = mashTapDiff,
 
                 FingerControlSR = fingerControlSR,
                 FingerControlDiff = fingerControlDiff,
@@ -119,11 +116,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         }
 
 
-        protected override Skill[] CreateSkills(IBeatmap beatmap) => new Skill[]
+        protected override Skill[] CreateSkills(IBeatmap beatmap)
         {
-            new Aim(),
-            new Speed()
-        };
+            throw new NotImplementedException();
+        }
 
         protected override IEnumerable<DifficultyHitObject> CreateDifficultyHitObjects(IBeatmap beatmap, double clockRate)
         {

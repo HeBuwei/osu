@@ -8,6 +8,7 @@ using System.Linq;
 using MathNet.Numerics;
 using MathNet.Numerics.Interpolation;
 
+using osu.Framework.Extensions;
 using osu.Game.Beatmaps;
 using osu.Game.Rulesets.Difficulty;
 using osu.Game.Rulesets.Mods;
@@ -23,9 +24,20 @@ namespace osu.Game.Rulesets.Osu.Difficulty
     {
         public new OsuDifficultyAttributes Attributes => (OsuDifficultyAttributes)base.Attributes;
 
-        private const double totalValueExponent = 1.5;
-        private const double comboWeight = 0.5;
-        private const double skillToPPExponent = 2.7;
+        /// <summary>
+        /// Aim, tap and acc values are combined using power mean with this as the exponent.
+        /// </summary>
+        private const double total_value_exponent = 1.5;
+
+        /// <summary>
+        /// This exponent is used to convert throughput to aim pp and tap skill to tap pp.
+        /// </summary>
+        private const double skill_to_pp_exponent = 2.7;
+
+        /// <summary>
+        /// The first 0.5 miss doesn't count when we penalize misses
+        /// </summary>
+        private const double miss_count_leniency = 0.5;
 
         private readonly int countHitCircles;
         private readonly int countSliders;
@@ -60,10 +72,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             mods = Score.Mods;
             accuracy = Score.Accuracy;
             scoreMaxCombo = Score.MaxCombo;
-            countGreat = Convert.ToInt32(Score.Statistics[HitResult.Great]);
-            countGood = Convert.ToInt32(Score.Statistics[HitResult.Good]);
-            countMeh = Convert.ToInt32(Score.Statistics[HitResult.Meh]);
-            countMiss = Convert.ToInt32(Score.Statistics[HitResult.Miss]);
+            countGreat = Score.Statistics.GetOrDefault(HitResult.Great);
+            countGood = Score.Statistics.GetOrDefault(HitResult.Good);
+            countMeh = Score.Statistics.GetOrDefault(HitResult.Meh);
+            countMiss = Score.Statistics.GetOrDefault(HitResult.Miss);
 
             greatWindow = 79.5 - 6 * Attributes.OverallDifficulty;
 
@@ -103,7 +115,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double tapValue = computeTapValue();
             double accuracyValue = computeAccuracyValue();
 
-            double totalValue = Mean.PowerMean(new double[] { aimValue, tapValue, accuracyValue }, totalValueExponent) * multiplier;
+            double totalValue = Mean.PowerMean(new double[] { aimValue, tapValue, accuracyValue }, total_value_exponent) * multiplier;
 
             if (categoryRatings != null)
             {
@@ -134,20 +146,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty
 
 
             // Get player's throughput according to miss count
-            double missTP;
-            if (effectiveMissCount == 0)
-                missTP = Attributes.MissTPs[0];
-            else
-            {
-                missTP = LinearSpline.InterpolateSorted(Attributes.MissCounts, Attributes.MissTPs)
+            double missTP = LinearSpline.InterpolateSorted(Attributes.MissCounts, Attributes.MissTPs)
                                  .Interpolate(effectiveMissCount);
-
-                // give it a small penalty so that higher combo almost always gives higher pp
-                missTP = Math.Max(missTP, 0) * 0.997;
-            }
+            missTP = Math.Max(missTP, 0);
 
             // Combine combo based throughput and miss count based throughput
-            double tp = Math.Pow(comboTP, comboWeight) * Math.Pow(missTP, 1 - comboWeight);
+            double tp = Mean.PowerMean(comboTP, missTP, 20);
 
             // Hidden mod
             if (mods.Any(h => h is OsuModHidden))
@@ -162,7 +166,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
 
                 tp *= hiddenFactor;
             }
-                
+
 
             // Account for cheesing
             double modifiedAcc = getModifiedAcc();
@@ -182,15 +186,15 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double aimValue = tpToPP(tp * cheeseFactor);
 
             // penalize misses
-            aimValue *= Math.Pow(0.96, effectiveMissCount);
+            aimValue *= Math.Pow(0.96, Math.Max(effectiveMissCount - miss_count_leniency, 0));
 
             // Buff long maps
-            aimValue *= 1 + (SpecialFunctions.Logistic((totalHits - 2500) / 500.0) - SpecialFunctions.Logistic(-2500 / 500.0)) * 0.128;
+            aimValue *= 1 + (SpecialFunctions.Logistic((totalHits - 2800) / 500.0) - SpecialFunctions.Logistic(-2800 / 500.0)) * 0.22;
 
             // Buff very high AR and low AR
             double approachRateFactor = 1.0;
             if (Attributes.ApproachRate > 10)
-                approachRateFactor += (0.05 + 0.35 * Math.Pow(Math.Sin(Math.PI * Math.Min(totalHits, 1250) / 2500), 2.5)) *
+                approachRateFactor += (0.05 + 0.35 * Math.Pow(Math.Sin(Math.PI * Math.Min(totalHits, 1250) / 2500), 1.7)) *
                                       Math.Pow(Attributes.ApproachRate - 10, 2);
             else if (Attributes.ApproachRate < 8.0)
                 approachRateFactor += 0.01 * (8.0 - Attributes.ApproachRate);
@@ -233,9 +237,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double urOnStreams = 10 * greatWindow / (Math.Sqrt(2) * SpecialFunctions.ErfInv(accOnStreamsPositive));
 
             double mashLevel = SpecialFunctions.Logistic(((urOnStreams * Attributes.TapDiff) - 4000) / 1000);
-            
-            double tapSkill = LinearSpline.InterpolateSorted(Attributes.MashLevels, Attributes.TapSkills)
-                              .Interpolate(mashLevel);
+
+            double tapSkill = mashLevel * Attributes.MashTapDiff + (1 - mashLevel) * Attributes.TapDiff;
 
             double tapValue = tapSkillToPP(tapSkill);
 
@@ -248,8 +251,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             tapValue *= accFactor;
 
             // Penalize misses and 50s exponentially
-            tapValue *= Math.Pow(0.93, effectiveMissCount);
-            tapValue *= Math.Pow(0.98, countMeh);
+            tapValue *= Math.Pow(0.93, Math.Max(effectiveMissCount - miss_count_leniency, 0));
+            tapValue *= Math.Pow(0.98, countMeh < totalHits / 500.0 ? 0.5 * countMeh : countMeh - totalHits / 500.0 * 0.5);
 
             // Buff very high AR
             double approachRateFactor = 1.0;
@@ -282,10 +285,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double accuracyValue = Math.Pow(deviationOnCircles, -2.2) * 46000;
 
             // scale acc pp with misses
-            accuracyValue *= Math.Pow(0.96, effectiveMissCount);
+            accuracyValue *= Math.Pow(0.96, Math.Max(effectiveMissCount - miss_count_leniency, 0));
 
             // nerf short maps
-            double lengthFactor = SpecialFunctions.Logistic(Attributes.Length / 60.0);
+            double lengthFactor = Attributes.Length < 120 ?
+                                  SpecialFunctions.Logistic((Attributes.Length - 300) / 60.0) + SpecialFunctions.Logistic(2.5) - SpecialFunctions.Logistic(-2.5) :
+                                  SpecialFunctions.Logistic(Attributes.Length / 60.0);
             accuracyValue *= lengthFactor;
 
             // scale acc pp with finger control
@@ -310,11 +315,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             return modifiedAcc;
         }
 
-        private double tpToPP(double tp) => Math.Pow(tp, skillToPPExponent) * 0.118;
+        private double tpToPP(double tp) => Math.Pow(tp, skill_to_pp_exponent) * 0.118;
 
-        private double tapSkillToPP(double tapSkill) => Math.Pow(tapSkill, skillToPPExponent) * 0.115;
+        private double tapSkillToPP(double tapSkill) => Math.Pow(tapSkill, skill_to_pp_exponent) * 0.115;
 
-        private double fingerControlDiffToPP(double fingerControlDiff) => Math.Pow(fingerControlDiff, skillToPPExponent);
+        private double fingerControlDiffToPP(double fingerControlDiff) => Math.Pow(fingerControlDiff, skill_to_pp_exponent);
 
         private double totalHits => countGreat + countGood + countMeh + countMiss;
         private double totalSuccessfulHits => countGreat + countGood + countMeh;

@@ -4,17 +4,20 @@ using MathNet.Numerics;
 
 namespace osu.Game.Rulesets.Osu.Difficulty.MathUtil
 {
-    class FittsLaw
+    public static class FittsLaw
     {
-        public FittsLaw()
+        /// <summary>
+        /// Calculates the index of performance for the distance and the movement time specified.
+        /// Index of performance is the difficulty of a movement.
+        /// </summary>
+        public static double CalculateIP(double d, double mt)
         {
+            return Math.Log(d + 1, 2) / (mt + 1e-10);
         }
 
-        public static double CalculateIP(double relativeD, double mt)
-        {
-            return Math.Log(relativeD + 1, 2) / (mt + 1e-10);
-        }
-
+        /// <summary>
+        /// Calculates the probability that the target is hit successfully.
+        /// </summary>
         public static double CalculateHitProb(double d, double mt, double tp)
         {
             if (d == 0)
@@ -29,7 +32,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.MathUtil
             return SpecialFunctions.Erf(2.066 / d * (Power2(mt * tp) - 1) / Math.Sqrt(2));
         }
 
-        private readonly static double[] coeffs = {
+        private static readonly double[] coeffs = {
             1.0000000060371126,
             0.693146840098149,
             0.2402310826131064,
@@ -45,11 +48,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.MathUtil
         /// </summary>
         public static double Power2(double x)
         {
-            if (x<0)
+            if (x < 0)
             {
                 return 1 / Power2(-x);
             }
-            if (x>60)
+            if (x > 60)
             {
                 return double.PositiveInfinity;
             }

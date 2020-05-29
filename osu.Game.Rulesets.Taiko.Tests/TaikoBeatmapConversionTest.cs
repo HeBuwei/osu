@@ -4,9 +4,8 @@
 using System;
 using System.Collections.Generic;
 using NUnit.Framework;
-using osu.Framework.MathUtils;
+using osu.Framework.Utils;
 using osu.Game.Rulesets.Objects;
-using osu.Game.Rulesets.Objects.Types;
 using osu.Game.Rulesets.Taiko.Objects;
 using osu.Game.Tests.Beatmaps;
 
@@ -20,6 +19,7 @@ namespace osu.Game.Rulesets.Taiko.Tests
         [NonParallelizable]
         [TestCase("basic")]
         [TestCase("slider-generating-drumroll")]
+        [TestCase("sample-to-type-conversions")]
         public void Test(string name) => base.Test(name);
 
         protected override IEnumerable<ConvertValue> CreateConvertValue(HitObject hitObject)
@@ -27,9 +27,9 @@ namespace osu.Game.Rulesets.Taiko.Tests
             yield return new ConvertValue
             {
                 StartTime = hitObject.StartTime,
-                EndTime = (hitObject as IHasEndTime)?.EndTime ?? hitObject.StartTime,
-                IsRim = hitObject is RimHit,
-                IsCentre = hitObject is CentreHit,
+                EndTime = hitObject.GetEndTime(),
+                IsRim = (hitObject as Hit)?.Type == HitType.Rim,
+                IsCentre = (hitObject as Hit)?.Type == HitType.Centre,
                 IsDrumRoll = hitObject is DrumRoll,
                 IsSwell = hitObject is Swell,
                 IsStrong = ((TaikoHitObject)hitObject).IsStrong
@@ -42,7 +42,7 @@ namespace osu.Game.Rulesets.Taiko.Tests
     public struct ConvertValue : IEquatable<ConvertValue>
     {
         /// <summary>
-        /// A sane value to account for osu!stable using ints everwhere.
+        /// A sane value to account for osu!stable using ints everywhere.
         /// </summary>
         private const float conversion_lenience = 2;
 

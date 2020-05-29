@@ -1,27 +1,36 @@
-﻿using MathNet.Numerics;
-using MathNet.Numerics.LinearAlgebra;
-using osu.Game.Rulesets.Osu.Difficulty.MathUtil;
-using osu.Game.Rulesets.Osu.Objects;
-using System;
+﻿using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 
+using MathNet.Numerics;
+using MathNet.Numerics.LinearAlgebra;
+
+using osu.Game.Rulesets.Osu.Difficulty.MathUtil;
+using osu.Game.Rulesets.Osu.Objects;
+
 
 namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 {
-    class Tap
+    public static class Tap
     {
+        private const double spaced_buff_factor = 0.10;
+        private const int timescale_count = 4;
 
-        private const int mashLevelCount = 11;
-        private const double spacedBuffFactor = 0.04;
+        /// <summary>
+        /// Decay coefficient for each timescale. 
+        /// </summary>
+        private static readonly Vector<double> decay_coeffs = Vector<double>.Build.Dense(Generate.LinearSpaced(timescale_count, 2.3, -2.8))
+                                                                                  .PointwiseExp();
+        /// <summary>
+        /// For each timescale, the strain result is multiplied by the corresponding factor in timescale_factors.
+        /// </summary>
+        private static readonly double[] timescale_factors = { 1.02, 1.02, 1.05, 1.15 };
 
-        private static readonly Vector<double> decayCoeffs = Vector<double>.Build.Dense(Generate.LinearSpaced(4, 2.3, -2.8))
-                                                                                 .PointwiseExp();
-
-        private static readonly double[] timescaleFactors = { 1.02, 1.02, 1.05, 1.15 };
-
-        public static (double, double, double[], double[], List<Vector<double>>, string) CalculateTapAttributes
+        /// <summary>
+        /// Calculates attributes related to tapping difficulty.
+        /// </summary>
+        public static (double, double, double, List<Vector<double>>, string) CalculateTapAttributes
             (List<OsuHitObject> hitObjects, double clockRate, List<double> fingerStrainHistory)
         {
             (var strainHistory, var tapDiff, var graphText) = calculateTapStrain(hitObjects, 0, clockRate, fingerStrainHistory);
@@ -30,9 +39,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             var streamnessMask = CalculateStreamnessMask(hitObjects, burstStrain, clockRate);
             double streamNoteCount = streamnessMask.Sum();
 
-            (var mashLevels, var tapSkills) = calculateMashLevelsVSTapSkills(hitObjects, clockRate, fingerStrainHistory);
+            (_, var mashTapDiff, _) = calculateTapStrain(hitObjects, 1, clockRate, fingerStrainHistory);
 
-            return (tapDiff, streamNoteCount, mashLevels, tapSkills, strainHistory, graphText);
+            return (tapDiff, streamNoteCount, mashTapDiff, strainHistory, graphText);
         }
 
         /// <summary>
@@ -43,10 +52,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                                                                                  double clockRate,
                                                                                  List<double> fingerStrains)
         {
-            var strainHistory = new List<Vector<double>> { decayCoeffs * 0, decayCoeffs * 0 };
-            var currStrain = decayCoeffs;
+            var strainHistory = new List<Vector<double>> { Vector<double>.Build.Dense(timescale_count),
+                                                           Vector<double>.Build.Dense(timescale_count) };
+            var currStrain = Vector<double>.Build.Dense(timescale_count);
             var sw = new StringWriter();
 
+            // compute strain at each object and store the results into strainHistory
             if (hitObjects.Count >= 2)
             {
                 double prevPrevTime = hitObjects[0].StartTime / 1000.0;
@@ -55,11 +66,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 for (int i = 2; i < hitObjects.Count; i++)
                 {
                     double currTime = hitObjects[i].StartTime / 1000.0;
-                    currStrain = currStrain.PointwiseMultiply((-decayCoeffs * (currTime - prevTime) / clockRate).PointwiseExp());
+
+                    // compute current strain after decay
+                    currStrain = currStrain.PointwiseMultiply((-decay_coeffs * (currTime - prevTime) / clockRate).PointwiseExp());
+
                     strainHistory.Add(currStrain.PointwisePower(1.1 / 3));
 
-                    double relativeD = (hitObjects[i].Position - hitObjects[i - 1].Position).Length / (2 * hitObjects[i].Radius);
-                    double spacedBuff = calculateSpacedness(relativeD) * spacedBuffFactor;
+                    double distance = (hitObjects[i].Position - hitObjects[i - 1].Position).Length / (2 * hitObjects[i].Radius);
+                    double spacedBuff = calculateSpacedness(distance) * spaced_buff_factor;
 
                     double deltaTime = Math.Max((currTime - prevPrevTime) / clockRate, 1.0 / 12.0);
 
@@ -67,11 +81,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                     double currStrainBase = Math.Max(Math.Pow(deltaTime, -2.7) * 0.265, Math.Pow(deltaTime, -2));
                     
                     double strain = currStrainBase * 
-                                  Math.Pow(calculateMashNerfFactor(relativeD, mashLevel), 3) *
+                                  Math.Pow(calculateMashNerfFactor(distance, mashLevel), 3) *
                                   Math.Pow(1 + fingerStrains[i], 0.75);
 
-                    currStrain += decayCoeffs * strain;
-
+                    currStrain += decay_coeffs * strain;
                     sw.WriteLine($"{currTime} {currStrain[0]} {currStrain[1]} {currStrain[2]} {currStrain[3]} {strain}");
 
                     prevPrevTime = prevTime;
@@ -79,9 +92,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 }
             }
 
-            var strainResult = decayCoeffs * 0;
+            // compute difficulty by aggregating strainHistory
+            var strainResult = Vector<double>.Build.Dense(timescale_count);
 
-            for (int j = 0; j < decayCoeffs.Count; j++)
+            for (int j = 0; j < decay_coeffs.Count; j++)
             {
                 double[] singleStrainHistory = new double[hitObjects.Count];
 
@@ -97,7 +111,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 for (int i = 0; i < hitObjects.Count; i++)
                     singleStrainResult += Math.Pow(singleStrainHistory[i], k);
 
-                strainResult[j] = Math.Pow(singleStrainResult, 1.0 / k) * timescaleFactors[j];
+                strainResult[j] = Math.Pow(singleStrainResult, 1.0 / k) * timescale_factors[j];
             }
 
             double diff = Mean.PowerMean(strainResult, 2);
@@ -130,21 +144,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             return streamnessMask;
         }
 
-        private static (double[], double[]) calculateMashLevelsVSTapSkills(List<OsuHitObject> hitObjects, double clockRate, List<double> fingerStrainHistory)
-        {
-            double[] mashLevels = new double[mashLevelCount];
-            double[] tapSkills = new double[mashLevelCount];
-
-            for (int i = 0; i < mashLevelCount; i++)
-            {
-                double mashLevel = (double)i / (mashLevelCount - 1);
-                mashLevels[i] = mashLevel;
-                (var strainHistory, var tapDiff, var text) = calculateTapStrain(hitObjects, mashLevel, clockRate, fingerStrainHistory);
-                tapSkills[i] = tapDiff;
-            }
-            return (mashLevels, tapSkills);
-        }
-
         private static double calculateMashNerfFactor(double relativeD, double mashLevel)
         {
             double fullMashFactor = 0.73 + 0.27 * SpecialFunctions.Logistic(relativeD * 7 - 6);
@@ -155,6 +154,5 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         {
             return SpecialFunctions.Logistic((d - 0.7) * 20) - SpecialFunctions.Logistic(-14);
         }
-	        
     }
 }
