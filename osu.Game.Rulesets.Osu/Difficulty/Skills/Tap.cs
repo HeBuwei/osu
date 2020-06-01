@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -30,32 +29,30 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         /// <summary>
         /// Calculates attributes related to tapping difficulty.
         /// </summary>
-        public static (double, double, double, List<Vector<double>>, string) CalculateTapAttributes
-            (List<OsuHitObject> hitObjects, double clockRate, List<double> fingerStrainHistory)
+        public static (double, double, double, List<Vector<double>>) CalculateTapAttributes
+            (List<OsuHitObject> hitObjects, double clockRate)
         {
-            (var strainHistory, var tapDiff, var graphText) = calculateTapStrain(hitObjects, 0, clockRate, fingerStrainHistory);
+            (var strainHistory, var tapDiff) = calculateTapStrain(hitObjects, 0, clockRate);
             double burstStrain = strainHistory.Max(v => v[0]);
 
             var streamnessMask = CalculateStreamnessMask(hitObjects, burstStrain, clockRate);
             double streamNoteCount = streamnessMask.Sum();
 
-            (_, var mashTapDiff, _) = calculateTapStrain(hitObjects, 1, clockRate, fingerStrainHistory);
+            (_, var mashTapDiff) = calculateTapStrain(hitObjects, 1, clockRate);
 
-            return (tapDiff, streamNoteCount, mashTapDiff, strainHistory, graphText);
+            return (tapDiff, streamNoteCount, mashTapDiff, strainHistory);
         }
 
         /// <summary>
         /// Calculates the strain values at each note and the maximum strain values
         /// </summary>
-        private static (List<Vector<double>>, double, string) calculateTapStrain(List<OsuHitObject> hitObjects,
+        private static (List<Vector<double>>, double) calculateTapStrain(List<OsuHitObject> hitObjects,
                                                                                  double mashLevel,
-                                                                                 double clockRate,
-                                                                                 List<double> fingerStrains)
+                                                                                 double clockRate)
         {
             var strainHistory = new List<Vector<double>> { Vector<double>.Build.Dense(timescale_count),
                                                            Vector<double>.Build.Dense(timescale_count) };
             var currStrain = Vector<double>.Build.Dense(timescale_count);
-            var sw = new StringWriter();
 
             // compute strain at each object and store the results into strainHistory
             if (hitObjects.Count >= 2)
@@ -70,22 +67,19 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                     // compute current strain after decay
                     currStrain = currStrain.PointwiseMultiply((-decay_coeffs * (currTime - prevTime) / clockRate).PointwiseExp());
 
-                    strainHistory.Add(currStrain.PointwisePower(1.1 / 3));
+                    strainHistory.Add(currStrain.PointwisePower(1.1 / 3) * 1.5);
 
                     double distance = (hitObjects[i].Position - hitObjects[i - 1].Position).Length / (2 * hitObjects[i].Radius);
                     double spacedBuff = calculateSpacedness(distance) * spaced_buff_factor;
 
-                    double deltaTime = Math.Max((currTime - prevPrevTime) / clockRate, 1.0 / 12.0);
+                    double deltaTime = Math.Max((currTime - prevPrevTime) / clockRate, 0.01);
 
                     // for 1/4 notes above 200 bpm the exponent is -2.7, otherwise it's -2
-                    double currStrainBase = Math.Max(Math.Pow(deltaTime, -2.7) * 0.265, Math.Pow(deltaTime, -2));
-                    
-                    double strain = currStrainBase * 
-                                  Math.Pow(calculateMashNerfFactor(distance, mashLevel), 3) *
-                                  Math.Pow(1 + fingerStrains[i], 0.75);
+                    double strainAddition = Math.Max(Math.Pow(deltaTime, -2.7) * 0.265, Math.Pow(deltaTime, -2));
 
-                    currStrain += decay_coeffs * strain;
-                    sw.WriteLine($"{currTime} {currStrain[0]} {currStrain[1]} {currStrain[2]} {currStrain[3]} {strain}");
+                    currStrain += decay_coeffs * strainAddition *
+                                  Math.Pow(calculateMashNerfFactor(distance, mashLevel), 3) *
+                                  Math.Pow(1 + spacedBuff, 3);
 
                     prevPrevTime = prevTime;
                     prevTime = currTime;
@@ -100,26 +94,27 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 double[] singleStrainHistory = new double[hitObjects.Count];
 
                 for (int i = 0; i < hitObjects.Count; i++)
+                {
                     singleStrainHistory[i] = strainHistory[i][j];
+                }
 
                 Array.Sort(singleStrainHistory);
                 Array.Reverse(singleStrainHistory);
 
                 double singleStrainResult = 0;
-                double k = 1 / Math.Log(1.07, 2);
+                double k = 1 - 0.04 * Math.Sqrt(decay_coeffs[j]);
 
                 for (int i = 0; i < hitObjects.Count; i++)
-                    singleStrainResult += Math.Pow(singleStrainHistory[i], k);
+                {
+                    singleStrainResult += singleStrainHistory[i] * Math.Pow(k, i);
+                }
 
-                strainResult[j] = Math.Pow(singleStrainResult, 1.0 / k) * timescale_factors[j];
+                strainResult[j] = singleStrainResult * (1 - k) * timescale_factors[j];
             }
 
             double diff = Mean.PowerMean(strainResult, 2);
 
-            string graphText = sw.ToString();
-            sw.Dispose();
-
-            return (strainHistory, diff, graphText);
+            return (strainHistory, diff);
         }
 
         /// <summary>
@@ -152,7 +147,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
         private static double calculateSpacedness(double d)
         {
-            return SpecialFunctions.Logistic((d - 0.7) * 20) - SpecialFunctions.Logistic(-14);
+            return SpecialFunctions.Logistic((d - 0.533) / 0.13) - SpecialFunctions.Logistic(-4.1);
         }
     }
 }

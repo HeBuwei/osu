@@ -4,6 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using MathNet.Numerics.Interpolation;
+using MathNet.Numerics.LinearAlgebra;
+using MathNet.Numerics;
+using osu.Game.Rulesets.Osu.Difficulty.MathUtil;
 
 namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 {
@@ -223,7 +226,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             return Math.Pow(Math.Sin(Math.PI * (strainAppearanceFraction - 1.0)), 2.0);
         }
 
-        private static double StrainValueOf(OsuHitObject current, double strainTime, double virtualStrainTime, double prevStrainTime, double prevVirtualStrainTime)
+        private static double StrainValueOf(OsuHitObject current, double strainTime, double virtualStrainTime, double prevStrainTime, double prevVirtualStrainTime, Vector<double> tapStrain)
         {
             if (current is Spinner)
                 return 0;
@@ -267,9 +270,16 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             if (current is Slider)
                 multiplier /= 2;
 
-            return repetitionVal * multiplier * downtimeScale * appearanceScale * uniqueScale / strainTime;
+            var tapCorrection = 1.0;
+            if (tapStrain != null)
+            {
+                var mean = Mean.PowerMean(tapStrain, 2);
+                tapCorrection = 1 + SpecialFunctions.Logistic((mean - 50) / 7.5) * 0.3;
+            }
+
+            return repetitionVal * multiplier * downtimeScale * appearanceScale * uniqueScale * tapCorrection / strainTime;
         }
-        public static (double, string, List<double>) CalculateFingerControlDiff(List<OsuHitObject> hitObjects, double clockRate)
+        public static (double, string, List<double>) CalculateFingerControlDiff(List<OsuHitObject> hitObjects, double clockRate, List<Vector<double>> tapStrainHistory)
         {
             if (hitObjects.Count == 0)
                 return (0, "", new List<double>());
@@ -303,7 +313,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 if (hitObjects[i-1] is Slider prevSlider)
                     virtualStrainTime = Math.Max((currTime - prevSlider.EndTime / 1000.0) / clockRate, 0.035);
 
-                double strain = strainMultiplier * StrainValueOf(hitObjects[i], strainTime, virtualStrainTime, prevStrainTime, prevVirtualStrainTime);
+                double strain = strainMultiplier * StrainValueOf(hitObjects[i], strainTime, virtualStrainTime, prevStrainTime, prevVirtualStrainTime, tapStrainHistory[i]);
                 
                 if (i < hitObjects.Count - 1)
                 {
