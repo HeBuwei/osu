@@ -277,11 +277,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             if (tapStrain != null)
             {
                 var mean = Mean.PowerMean(tapStrain, 2);
-                tapCorrection = 1 + SpecialFunctions.Logistic((mean - 50) / 7.5) * 0.3;
+                tapCorrection = 1 + SpecialFunctions.Logistic((mean - 10) / 2) * 0.15;
             }
 
             var strain = repetitionVal * multiplier * downtimeScale * appearanceScale * uniqueScale * tapCorrection / strainTime;
-            return 0.3 * Math.Exp(-1.5 * strain) + strain;
+            return 0.35 * Math.Exp(-1.5 * strain) + strain;
         }
         public static (double, string, List<double>) CalculateFingerControlDiff(List<OsuHitObject> hitObjects, double clockRate, List<Vector<double>> tapStrainHistory)
         {
