@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
+// See the LICENCE file in the repository root for full licence text.
+
+using System;
 
 using MathNet.Numerics;
 
@@ -10,7 +13,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.MathUtil
         /// Calculates the index of performance for the distance and the movement time specified.
         /// Index of performance is the difficulty of a movement.
         /// </summary>
-        public static double CalculateIP(double d, double mt)
+        public static double CalculateIp(double d, double mt)
         {
             return Math.Log(d + 1, 2) / (mt + 1e-10);
         }
