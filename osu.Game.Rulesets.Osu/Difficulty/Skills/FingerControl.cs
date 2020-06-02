@@ -280,7 +280,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 tapCorrection = 1 + SpecialFunctions.Logistic((mean - 50) / 7.5) * 0.3;
             }
 
-            return repetitionVal * multiplier * downtimeScale * appearanceScale * uniqueScale * tapCorrection / strainTime;
+            var strain = repetitionVal * multiplier * downtimeScale * appearanceScale * uniqueScale * tapCorrection / strainTime;
+            return 0.3 * Math.Exp(-1.5 * strain) + strain;
         }
         public static (double, string, List<double>) CalculateFingerControlDiff(List<OsuHitObject> hitObjects, double clockRate, List<Vector<double>> tapStrainHistory)
         {
