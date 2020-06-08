@@ -294,7 +294,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             accuracyValue *= lengthFactor;
 
             // scale acc pp with finger control
-            accuracyValue *= Math.Pow(0.123 * fingerControlDiff + 1.0, 2.0);
+            accuracyValue *= Math.Sqrt(fingerControlDiff + 1.2) / 1.0955;
+            //accuracyValue *= Math.Sqrt((fingerControlDiff + 2.0) / 1.414);
+            //accuracyValue *= 1.0 + SpecialFunctions.Logistic((fingerControlDiff - 3) / 0.7) * 2;
+            //accuracyValue *= Math.Pow(0.123 * fingerControlDiff + 1.0, 2.0);
 
             if (mods.Any(m => m is OsuModHidden))
                 accuracyValue *= 1.08;

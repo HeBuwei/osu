@@ -21,7 +21,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         private static List<double> noteHistoryVirtual = new List<double>();
         private static LinearSpline prevFractionSpline = LinearSpline.InterpolateSorted(
             new double[] { 1.0, 1.5, 2.0, 3.0 },
-            new double[] { 0.5, 1.5, 1  , 1   }
+            new double[] { 0.5, 1.25, 1  , 1   }
         );
         private static LinearSpline nextFractionSpline = LinearSpline.InterpolateSorted(
             new double[] { 1.0 , 7.0/6.0, 1.75, 2.0 , 3.0 , 4.0 },
