@@ -45,12 +45,19 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double preemptNoClockRate = BeatmapDifficulty.DifficultyRange(beatmap.BeatmapInfo.BaseDifficulty.ApproachRate, 1800, 1200, 450);
             var noteDensities = NoteDensity.CalculateNoteDensities(hitObjects, preemptNoClockRate);
 
+            HitWindows hitWindows = new OsuHitWindows();
+            hitWindows.SetDifficulty(beatmap.BeatmapInfo.BaseDifficulty.OverallDifficulty);
+
+            // Todo: These int casts are temporary to achieve 1:1 results with osu!stable, and should be removed in the future
+            double hitWindowGreat = (int)(hitWindows.WindowFor(HitResult.Great)) / clockRate;
+            double preempt = (int)BeatmapDifficulty.DifficultyRange(beatmap.BeatmapInfo.BaseDifficulty.ApproachRate, 1800, 1200, 450) / clockRate;
+
             // Tap
             (var tapDiff, var streamNoteCount, var mashTapDiff, var strainHistory) =
                 Tap.CalculateTapAttributes(hitObjects, clockRate);
 
             // Finger Control
-            (double fingerControlDiff, string fingerGraph, List<double> fingerStrainHistory) = FingerControl.CalculateFingerControlDiff(hitObjects, clockRate, strainHistory);
+            (double fingerControlDiff, string fingerGraph, List<double> fingerStrainHistory) = FingerControl.CalculateFingerControlDiff(hitObjects, clockRate, strainHistory, hitWindowGreat);
 
             // Aim
             (var aimDiff, var aimHiddenFactor, var comboTps, var missTps, var missCounts,
@@ -72,13 +79,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double aimSr = aim_multiplier * Math.Pow(aimDiff, sr_exponent);
             double fingerControlSr = finger_control_multiplier * Math.Pow(fingerControlDiff, sr_exponent);
             double sr = Mean.PowerMean(new double[] { tapSr, aimSr, fingerControlSr }, 7) * 1.131;
-
-            HitWindows hitWindows = new OsuHitWindows();
-            hitWindows.SetDifficulty(beatmap.BeatmapInfo.BaseDifficulty.OverallDifficulty);
-
-            // Todo: These int casts are temporary to achieve 1:1 results with osu!stable, and should be removed in the future
-            double hitWindowGreat = (int)(hitWindows.WindowFor(HitResult.Great)) / clockRate;
-            double preempt = (int)BeatmapDifficulty.DifficultyRange(beatmap.BeatmapInfo.BaseDifficulty.ApproachRate, 1800, 1200, 450) / clockRate;
 
             int maxCombo = beatmap.HitObjects.Count;
             // Add the ticks + tail of the slider. 1 is subtracted because the head circle would be counted twice (once for the slider itself in the line above)
