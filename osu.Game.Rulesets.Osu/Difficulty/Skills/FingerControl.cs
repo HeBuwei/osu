@@ -13,22 +13,23 @@ using osu.Game.Rulesets.Osu.Difficulty.MathUtil;
 
 namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 {
-    public static class FingerControl
+    public class FingerControl
     {
-        private const double strainMultiplier = 1.3;
-        private const double repetitionWeight = 0.7;
-        private static List<double> noteHistory = new List<double>();
-        private static List<double> noteHistoryVirtual = new List<double>();
-        private static LinearSpline prevFractionSpline = LinearSpline.InterpolateSorted(
+        private const double strain_multiplier = 1.3;
+        private const double repetition_weight = 0.7;
+
+        private List<double> noteHistory = new List<double>();
+        private List<double> noteHistoryVirtual = new List<double>();
+        private LinearSpline prevFractionSpline = LinearSpline.InterpolateSorted(
             new double[] { 1.0, 1.5, 2.0, 3.0 },
             new double[] { 0.5, 1.25, 1  , 1   }
         );
-        private static LinearSpline nextFractionSpline = LinearSpline.InterpolateSorted(
+        private LinearSpline nextFractionSpline = LinearSpline.InterpolateSorted(
             new double[] { 1.0 , 7.0/6.0, 1.75, 2.0 , 3.0 , 4.0 },
             new double[] { 0.05, 1      , 1   , 0.5 , 0   , 0   }
         );
 
-        private static double CompareStrains(double strain1, double strain2, LinearSpline fractionSpline)
+        private double compareStrains(double strain1, double strain2, LinearSpline fractionSpline)
         {
             if (strain1 == 0 || strain2 == 0)
                 return 1;
@@ -36,7 +37,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             return fractionSpline.Interpolate(fraction);
         }
 
-        private static (double, bool) checkAnomaly(List<double> refNoteHistory, double greatHitWindow)
+        private (double, bool) checkAnomaly(List<double> refNoteHistory, double greatHitWindow)
         {
             List<double> uniqueStrains = new List<double>();
 
@@ -88,7 +89,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             return ((double)uniqueStrains.Count, false); 
         }
 
-        private static double calculateExpectancy(List<double> refNoteHistory, double greatHitWindow)
+        private double calculateExpectancy(List<double> refNoteHistory, double greatHitWindow)
         {
             // See how many unique strains there are, and get a nerfed version of the straintime
             (double anomalyVal, bool exists) = checkAnomaly(refNoteHistory, greatHitWindow);
@@ -201,7 +202,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             return repetitionVal;
         }
-        private static double calculateDowntime(double strainTime, List<double> refNoteHistory, double greatHitWindow)
+        private double calculateDowntime(double strainTime, List<double> refNoteHistory, double greatHitWindow)
         {
             int longNoteCount = 0;
             for (int i = 0; i < refNoteHistory.Count; i++)
@@ -215,7 +216,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             return Math.Pow(Math.Sin(Math.PI * (longNoteFraction - 1.0)), 2.0);
         }
 
-        private static double strainAppearance(double strainTime, List<double> refNoteHistory, double greatHitWindow)
+        private double strainAppearance(double strainTime, List<double> refNoteHistory, double greatHitWindow)
         {
             int strainApperance = 0;
             for (int i = 0; i < refNoteHistory.Count; i++)
@@ -229,7 +230,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             return Math.Pow(Math.Sin(Math.PI * (strainAppearanceFraction - 1.0)), 2.0);
         }
 
-        private static double StrainValueOf(OsuHitObject current, double strainTime, double virtualStrainTime, double prevStrainTime, double prevVirtualStrainTime, Vector<double> tapStrain, double greatHitWindow)
+        private double StrainValueOf(OsuHitObject current, double strainTime, double virtualStrainTime, double prevStrainTime, double prevVirtualStrainTime, Vector<double> tapStrain, double greatHitWindow)
         {
             if (current is Spinner)
                 return 0;
@@ -267,8 +268,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             }
 
             double multiplier = Math.Min(
-                Math.Min(CompareStrains(strainTime, prevStrainTime, prevFractionSpline), CompareStrains(strainTime, prevVirtualStrainTime, prevFractionSpline)),
-                Math.Min(CompareStrains(virtualStrainTime, prevStrainTime, prevFractionSpline), CompareStrains(virtualStrainTime, prevVirtualStrainTime, prevFractionSpline))
+                Math.Min(compareStrains(strainTime, prevStrainTime, prevFractionSpline), compareStrains(strainTime, prevVirtualStrainTime, prevFractionSpline)),
+                Math.Min(compareStrains(virtualStrainTime, prevStrainTime, prevFractionSpline), compareStrains(virtualStrainTime, prevVirtualStrainTime, prevFractionSpline))
             );
             if (current is Slider)
                 multiplier /= 2;
@@ -277,20 +278,16 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             if (tapStrain != null)
             {
                 var mean = Mean.PowerMean(tapStrain, 2);
-                tapCorrection = 1 + SpecialFunctions.Logistic((mean - 10) / 2) * 0.15;
+                tapCorrection = 1 + SpecialFunctions.Logistic((mean - 10) / 2) * 0.25;
             }
 
             var strain = repetitionVal * multiplier * downtimeScale * appearanceScale * uniqueScale * tapCorrection / strainTime;
             return 0.35 * Math.Exp(-1.5 * strain) + strain;
         }
-        public static (double, string, List<double>) CalculateFingerControlDiff(List<OsuHitObject> hitObjects, double clockRate, List<Vector<double>> tapStrainHistory, double greatHitWindow)
+        public (double, string, List<double>) CalculateFingerControlDiff(List<OsuHitObject> hitObjects, double clockRate, List<Vector<double>> tapStrainHistory, double greatHitWindow)
         {
             if (hitObjects.Count == 0)
                 return (0, "", new List<double>());
-
-            // Refresh
-            noteHistory = new List<double>();
-            noteHistoryVirtual = new List<double>();
 
             double prevTime = hitObjects[0].StartTime / 1000.0;
             double prevStrainTime = 0;
@@ -317,7 +314,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 if (hitObjects[i-1] is Slider prevSlider)
                     virtualStrainTime = Math.Max((currTime - prevSlider.EndTime / 1000.0) / clockRate, 0.035);
 
-                double strain = strainMultiplier * StrainValueOf(hitObjects[i], strainTime, virtualStrainTime, prevStrainTime, prevVirtualStrainTime, tapStrainHistory[i], greatHitWindow / 1000);
+                double strain = strain_multiplier * StrainValueOf(hitObjects[i], strainTime, virtualStrainTime, prevStrainTime, prevVirtualStrainTime, tapStrainHistory[i], greatHitWindow / 1000);
                 
                 if (i < hitObjects.Count - 1)
                 {
@@ -328,8 +325,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                         nextVirtualStrainTime = Math.Max((nextTime - currSlider.EndTime / 1000.0) / clockRate, 0.035);
 
                     double multiplier = Math.Min(
-                        Math.Min(CompareStrains(strainTime, nextStrainTime, nextFractionSpline), CompareStrains(strainTime, nextVirtualStrainTime, nextFractionSpline)),
-                        Math.Min(CompareStrains(virtualStrainTime, nextStrainTime, nextFractionSpline), CompareStrains(virtualStrainTime, nextVirtualStrainTime, nextFractionSpline))
+                        Math.Min(compareStrains(strainTime, nextStrainTime, nextFractionSpline), compareStrains(strainTime, nextVirtualStrainTime, nextFractionSpline)),
+                        Math.Min(compareStrains(virtualStrainTime, nextStrainTime, nextFractionSpline), compareStrains(virtualStrainTime, nextVirtualStrainTime, nextFractionSpline))
                     );
                     if (hitObjects[i+1] is Slider)
                         multiplier /= 2;
@@ -361,7 +358,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             Array.Reverse(strainHistoryArray);
 
             double diff = 0;
-            double k = 0.95;
+            double k = 0.98;
 
             for (int i = 0; i < hitObjects.Count; i++)
                 diff += strainHistoryArray[i] * Math.Pow(k, i);
