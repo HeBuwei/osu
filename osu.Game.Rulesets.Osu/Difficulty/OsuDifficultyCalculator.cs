@@ -53,7 +53,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double preempt = (int)BeatmapDifficulty.DifficultyRange(beatmap.BeatmapInfo.BaseDifficulty.ApproachRate, 1800, 1200, 450) / clockRate;
 
             // Tap
-            (var tapDiff, var streamNoteCount, var mashTapDiff, var strainHistory) =
+            (var tapDiff, var streamNoteCount, var mashTapDiff, var strainHistory, string graphTextTap) =
                 Tap.CalculateTapAttributes(hitObjects, clockRate);
 
             // Finger Control
@@ -69,8 +69,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             File.WriteAllText(graphFilePath, graphText);
 
             // graph for tap
-            //string graphFilePathTap = Path.Combine("cache", $"graph_{beatmap.BeatmapInfo.OnlineBeatmapID}_{string.Join(string.Empty, mods.Select(x => x.Acronym))}_tap.txt");
-            //File.WriteAllText(graphFilePathTap, graphTextTap);
+            string graphFilePathTap = Path.Combine("cache", $"graph_{beatmap.BeatmapInfo.OnlineBeatmapID}_{string.Join(string.Empty, mods.Select(x => x.Acronym))}_tap.txt");
+            File.WriteAllText(graphFilePathTap, graphTextTap);
 
             // graph for finger
             string graphFingerFilePath = Path.Combine("cache", $"graph_{beatmap.BeatmapInfo.OnlineBeatmapID}_{string.Join(string.Empty, mods.Select(x => x.Acronym))}_finger.txt");

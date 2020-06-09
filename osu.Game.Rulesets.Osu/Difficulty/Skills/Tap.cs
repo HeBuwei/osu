@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 using MathNet.Numerics;
@@ -32,30 +33,32 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         /// <summary>
         /// Calculates attributes related to tapping difficulty.
         /// </summary>
-        public static (double, double, double, List<Vector<double>>) CalculateTapAttributes
+        public static (double, double, double, List<Vector<double>>, string) CalculateTapAttributes
             (List<OsuHitObject> hitObjects, double clockRate)
         {
-            (var strainHistory, var tapDiff) = calculateTapStrain(hitObjects, 0, clockRate);
+            (var strainHistory, var tapDiff, var graphText) = calculateTapStrain(hitObjects, 0, clockRate);
             double burstStrain = strainHistory.Max(v => v[0]);
 
             var streamnessMask = CalculateStreamnessMask(hitObjects, burstStrain, clockRate);
             double streamNoteCount = streamnessMask.Sum();
 
-            (_, var mashTapDiff) = calculateTapStrain(hitObjects, 1, clockRate);
+            (_, var mashTapDiff, _) = calculateTapStrain(hitObjects, 1, clockRate);
 
-            return (tapDiff, streamNoteCount, mashTapDiff, strainHistory);
+            return (tapDiff, streamNoteCount, mashTapDiff, strainHistory, graphText);
         }
 
         /// <summary>
         /// Calculates the strain values at each note and the maximum strain values
         /// </summary>
-        private static (List<Vector<double>>, double) calculateTapStrain(List<OsuHitObject> hitObjects,
+        private static (List<Vector<double>>, double, string) calculateTapStrain(List<OsuHitObject> hitObjects,
                                                                                  double mashLevel,
                                                                                  double clockRate)
         {
             var strainHistory = new List<Vector<double>> { Vector<double>.Build.Dense(timescale_count),
                                                            Vector<double>.Build.Dense(timescale_count) };
             var currStrain = Vector<double>.Build.Dense(timescale_count);
+
+            var sw = new StringWriter();
 
             // compute strain at each object and store the results into strainHistory
             if (hitObjects.Count >= 2)
@@ -83,6 +86,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                     currStrain += decay_coeffs * strainAddition *
                                   Math.Pow(calculateMashNerfFactor(distance, mashLevel), 3) *
                                   Math.Pow(1 + spacedBuff, 3);
+
+                    sw.WriteLine($"{currTime} {currStrain[0]} {currStrain[1]} {currStrain[2]} {currStrain[3]} {strainAddition}");
 
                     prevPrevTime = prevTime;
                     prevTime = currTime;
@@ -117,7 +122,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             double diff = Mean.PowerMean(strainResult, 2);
 
-            return (strainHistory, diff);
+            string graphText = sw.ToString();
+            sw.Dispose();
+
+            return (strainHistory, diff, graphText);
         }
 
         /// <summary>

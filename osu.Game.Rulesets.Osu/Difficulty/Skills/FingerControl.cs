@@ -18,6 +18,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         private const double strain_multiplier = 1.3;
         private const double repetition_weight = 0.7;
 
+        private double identicalStrainTolerance;
+
         private List<double> noteHistory = new List<double>();
         private List<double> noteHistoryVirtual = new List<double>();
         private LinearSpline prevFractionSpline = LinearSpline.InterpolateSorted(
@@ -25,8 +27,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             new double[] { 0.5, 1.25, 1  , 1   }
         );
         private LinearSpline nextFractionSpline = LinearSpline.InterpolateSorted(
-            new double[] { 1.0 , 7.0/6.0, 1.75, 2.0 , 3.0 , 4.0 },
-            new double[] { 0.05, 1      , 1   , 0.5 , 0   , 0   }
+            new double[] { 1.0 , 7.0/6.0, 1.5 , 1.75, 2.0 , 3.0 , 4.0 },
+            new double[] { 0.05, 1      , 0.75, 1   , 0.5 , 0   , 0   }
         );
 
         private double compareStrains(double strain1, double strain2, LinearSpline fractionSpline)
@@ -37,7 +39,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             return fractionSpline.Interpolate(fraction);
         }
 
-        private (double, bool) checkAnomaly(List<double> refNoteHistory, double greatHitWindow)
+        private (double, bool) checkAnomaly(List<double> refNoteHistory)
         {
             List<double> uniqueStrains = new List<double>();
 
@@ -47,7 +49,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 bool exists = false;
                 for (int j = 0; j < uniqueStrains.Count; j++)
                 {
-                    if (Math.Abs(uniqueStrains[j] - refNoteHistory[i]) < greatHitWindow)
+                    if (Math.Abs(uniqueStrains[j] - refNoteHistory[i]) < identicalStrainTolerance)
                     {
                         exists = true;
                         break;
@@ -66,9 +68,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             for (int j = 0; j < uniqueStrains.Count; j++)
             {
                 if (
-                    Math.Abs(strainTime - uniqueStrains[j]) < greatHitWindow ||
-                    Math.Abs(strainTime * 2 - uniqueStrains[j]) < greatHitWindow ||
-                    Math.Abs(strainTime / 2 - uniqueStrains[j]) < greatHitWindow
+                    Math.Abs(strainTime - uniqueStrains[j]) < identicalStrainTolerance ||
+                    Math.Abs(strainTime * 2 - uniqueStrains[j]) < identicalStrainTolerance ||
+                    Math.Abs(strainTime / 2 - uniqueStrains[j]) < identicalStrainTolerance
                 )
                 {
                     unique = false;
@@ -89,10 +91,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             return ((double)uniqueStrains.Count, false); 
         }
 
-        private double calculateExpectancy(List<double> refNoteHistory, double greatHitWindow)
+        private double calculateExpectancy(List<double> refNoteHistory)
         {
             // See how many unique strains there are, and get a nerfed version of the straintime
-            (double anomalyVal, bool exists) = checkAnomaly(refNoteHistory, greatHitWindow);
+            (double anomalyVal, bool exists) = checkAnomaly(refNoteHistory);
 
             refNoteHistory.Reverse();
 
@@ -101,7 +103,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             double strainTime = refNoteHistory[0];
             for (int i = 1; i < refNoteHistory.Count; i++)
             {
-                if (Math.Abs(refNoteHistory[i] - strainTime) > greatHitWindow)
+                if (Math.Abs(refNoteHistory[i] - strainTime) > identicalStrainTolerance)
                 {
                     pattern = refNoteHistory.Take(i+1).ToList();
                     break;
@@ -141,7 +143,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                     bool samePattern = true;
                     for (int j = 0; j < pattern.Count; j++)
                     {
-                        if (Math.Abs(pattern[j] - patternCompare[j]) > greatHitWindow)
+                        if (Math.Abs(pattern[j] - patternCompare[j]) > identicalStrainTolerance)
                         {
                             samePattern = false;
                             break;
@@ -156,7 +158,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                         bool reverseSamePattern = true;
                         for (int j = 0; j < pattern.Count; j++)
                         {
-                            if (Math.Abs(pattern[j] - patternCompare[j]) > greatHitWindow)
+                            if (Math.Abs(pattern[j] - patternCompare[j]) > identicalStrainTolerance)
                             {
                                 reverseSamePattern = false;
                                 break;
@@ -202,26 +204,31 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             return repetitionVal;
         }
-        private double calculateDowntime(double strainTime, List<double> refNoteHistory, double greatHitWindow)
+        private double calculateDowntime(double strainTime, List<double> refNoteHistory)
         {
             int longNoteCount = 0;
             for (int i = 0; i < refNoteHistory.Count; i++)
             {
-                if (refNoteHistory[i] > strainTime * 2 - greatHitWindow)
+                if (refNoteHistory[i] > strainTime * 2 - identicalStrainTolerance)
                     longNoteCount++;
             }
 
             double longNoteFraction = Math.Max(0.5, (double)longNoteCount / (double)refNoteHistory.Count);
 
-            return Math.Pow(Math.Sin(Math.PI * (longNoteFraction - 1.0)), 2.0);
+            var slowdownFrac = 1.0;
+            var strainAverage = refNoteHistory.Average();
+            if (strainAverage < strainTime)
+                slowdownFrac = Math.Min(strainTime / strainAverage, 1.2);
+
+            return Math.Pow(Math.Sin(Math.PI * (longNoteFraction - 1.0)), 2.0) / slowdownFrac;
         }
 
-        private double strainAppearance(double strainTime, List<double> refNoteHistory, double greatHitWindow)
+        private double strainAppearance(double strainTime, List<double> refNoteHistory)
         {
             int strainApperance = 0;
             for (int i = 0; i < refNoteHistory.Count; i++)
             {
-                if (Math.Abs(refNoteHistory[i] - strainTime) < greatHitWindow)
+                if (Math.Abs(refNoteHistory[i] - strainTime) < identicalStrainTolerance)
                     strainApperance++;
             }
 
@@ -230,7 +237,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             return Math.Pow(Math.Sin(Math.PI * (strainAppearanceFraction - 1.0)), 2.0);
         }
 
-        private double StrainValueOf(OsuHitObject current, double strainTime, double virtualStrainTime, double prevStrainTime, double prevVirtualStrainTime, Vector<double> tapStrain, double greatHitWindow)
+        private double StrainValueOf(OsuHitObject current, double strainTime, double virtualStrainTime, double prevStrainTime, double prevVirtualStrainTime, Vector<double> tapStrain)
         {
             if (current is Spinner)
                 return 0;
@@ -250,20 +257,20 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             double uniqueScale = 1;
             if (noteHistory.Count > 2)
             {
-                double repetition = 1.0 - calculateExpectancy(noteHistory, greatHitWindow);
-                double virtualRepetition = 1.0 - calculateExpectancy(noteHistoryVirtual, greatHitWindow);
+                double repetition = 1.0 - calculateExpectancy(noteHistory);
+                double virtualRepetition = 1.0 - calculateExpectancy(noteHistoryVirtual);
                 double repetitionExponent = Math.Min(2.0, 48.75 * Math.Min(strainTime, virtualStrainTime) - 1.65625);
                 repetitionVal = Math.Pow(Math.Min(repetition, virtualRepetition), repetitionExponent);
 
                 // When there is major downtime / not much actually happening
-                downtimeScale = Math.Min(calculateDowntime(strainTime, noteHistory, greatHitWindow), calculateDowntime(virtualStrainTime, noteHistoryVirtual, greatHitWindow));
+                downtimeScale = Math.Min(calculateDowntime(strainTime, noteHistory), calculateDowntime(virtualStrainTime, noteHistoryVirtual));
                 
                 // When there's a huge stream before a pack of doubles / triples
-                appearanceScale = Math.Min(strainAppearance(strainTime, noteHistory, greatHitWindow), strainAppearance(virtualStrainTime, noteHistoryVirtual, greatHitWindow));
+                appearanceScale = Math.Min(strainAppearance(strainTime, noteHistory), strainAppearance(virtualStrainTime, noteHistoryVirtual));
 
                 // When there's a ton of unique strains that means that it's a wild BPM area
-                (double uniqueVal, _) = checkAnomaly(noteHistory, greatHitWindow);
-                (double virtualUniqueVal, _) = checkAnomaly(noteHistoryVirtual, greatHitWindow);
+                (double uniqueVal, _) = checkAnomaly(noteHistory);
+                (double virtualUniqueVal, _) = checkAnomaly(noteHistoryVirtual);
                 uniqueScale = 1.0 + Math.Pow((Math.Min(uniqueVal, virtualUniqueVal) - 1.0) / 11.0, 4.0);
             }
 
@@ -284,6 +291,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             var strain = repetitionVal * multiplier * downtimeScale * appearanceScale * uniqueScale * tapCorrection / strainTime;
             return 0.30 * Math.Exp(-1.5 * strain) + strain;
         }
+
         public (double, string, List<double>) CalculateFingerControlDiff(List<OsuHitObject> hitObjects, double clockRate, List<Vector<double>> tapStrainHistory, double greatHitWindow)
         {
             if (hitObjects.Count == 0)
@@ -296,6 +304,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             List<double> strainHistory = new List<double> { 0 };
             List<double> specificStrainHistory = new List<double> { 0 };
             var sw = new StringWriter();
+
+            identicalStrainTolerance = greatHitWindow / 1000;
 
             // calculate strain value for each hit object
             for (int i = 1; i < hitObjects.Count; i++)
@@ -314,7 +324,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 if (hitObjects[i-1] is Slider prevSlider)
                     virtualStrainTime = Math.Max((currTime - prevSlider.EndTime / 1000.0) / clockRate, 0.035);
 
-                double strain = strain_multiplier * StrainValueOf(hitObjects[i], strainTime, virtualStrainTime, prevStrainTime, prevVirtualStrainTime, tapStrainHistory[i], greatHitWindow / 1000);
+                double strain = strain_multiplier * StrainValueOf(hitObjects[i], strainTime, virtualStrainTime, prevStrainTime, prevVirtualStrainTime, tapStrainHistory[i]);
                 
                 if (i < hitObjects.Count - 1)
                 {
