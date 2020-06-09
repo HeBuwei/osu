@@ -280,7 +280,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double accOnCirclesPositive = Math.Exp(accOnCircles - 1);
 
             // nerf high OD based on the fcontrol sr
-            double ODnerf = 50.0 / (fingerControlDiff + 2.0) + 15.0;
+            double ODnerf = 50.0 / (fingerControlDiff + 2.2) + 15.0;
             double deviationOnCircles = (greatWindow + ODnerf) / (Math.Sqrt(2) * SpecialFunctions.ErfInv(accOnCirclesPositive));
             double accuracyValue = Math.Pow(deviationOnCircles, -2.2) * 90000;
 
