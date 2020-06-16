@@ -57,7 +57,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 Tap.CalculateTapAttributes(hitObjects, clockRate);
 
             // Finger Control
-            (double fingerControlDiff, string fingerGraph, List<double> fingerStrainHistory, int hardFingerStrainAmount) = new FingerControl().CalculateFingerControlDiff(hitObjects, clockRate, strainHistory, hitWindowGreat);
+            (double fingerControlDiff, string fingerGraph, List<double> fingerStrainHistory, int hardFingerStrainAmount) = new FingerControl().CalculateFingerControlDiff(hitObjects, clockRate, strainHistory, hitWindowGreat * 2);
 
             // Aim
             (var aimDiff, var aimHiddenFactor, var comboTps, var missTps, var missCounts,
