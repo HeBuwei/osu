@@ -17,6 +17,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
     {
         private const double strain_multiplier = 1.3;
         private const double repetition_weight = 0.7;
+        private const double hard_strain_threshold = 1.0;
 
         private double identicalStrainTolerance;
 
@@ -292,10 +293,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             return 0.30 * Math.Exp(-1.5 * strain) + strain;
         }
 
-        public (double, string, List<double>) CalculateFingerControlDiff(List<OsuHitObject> hitObjects, double clockRate, List<Vector<double>> tapStrainHistory, double greatHitWindow)
+        public (double, string, List<double>, int) CalculateFingerControlDiff(List<OsuHitObject> hitObjects, double clockRate, List<Vector<double>> tapStrainHistory, double greatHitWindow)
         {
             if (hitObjects.Count == 0)
-                return (0, "", new List<double>());
+                return (0, "", new List<double>(), 0);
 
             double prevTime = hitObjects[0].StartTime / 1000.0;
             double prevStrainTime = 0;
@@ -304,6 +305,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             List<double> strainHistory = new List<double> { 0 };
             List<double> specificStrainHistory = new List<double> { 0 };
             var sw = new StringWriter();
+
+            var hardStrainsAmount = 0;
 
             identicalStrainTolerance = greatHitWindow / 1000;
 
@@ -348,6 +351,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 
                 currStrain += strain;
 
+                if (currStrain > hard_strain_threshold)
+                    hardStrainsAmount++;
+
                 sw.WriteLine($"{currTime} {currStrain} {strain}");
 
                 prevTime = currTime;
@@ -373,7 +379,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             for (int i = 0; i < hitObjects.Count; i++)
                 diff += strainHistoryArray[i] * Math.Pow(k, i);
 
-            return (diff * (1 - k), graphText, specificStrainHistory);
+            return (diff * (1 - k), graphText, specificStrainHistory, hardStrainsAmount);
         }
     }
 }

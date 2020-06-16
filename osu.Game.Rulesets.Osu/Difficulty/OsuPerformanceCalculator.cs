@@ -294,7 +294,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             accuracyValue *= lengthFactor;
 
             // scale acc pp with finger control
-            accuracyValue *= Math.Sqrt(fingerControlDiff + 1.2) / 1.0955;
+            if (Attributes.FingerControlHardStrains > 0)
+            {
+                var mistimes = totalMistimedHits > 1 ? totalMistimedHits : 1; // make SSes and 1x misses not lose any finger bonus
+                accuracyValue *= Math.Sqrt(fingerControlDiff + 1) * Math.Min(Attributes.FingerControlHardStrains / mistimes, 1.0);
+            }
+            //accuracyValue *= (Math.Sqrt(fingerControlDiff + 1.2) / 1.0955)
             //accuracyValue *= Math.Sqrt((fingerControlDiff + 2.0) / 1.414);
             //accuracyValue *= 1.0 + SpecialFunctions.Logistic((fingerControlDiff - 3) / 0.7) * 2;
             //accuracyValue *= Math.Pow(0.123 * fingerControlDiff + 1.0, 2.0);
@@ -326,5 +331,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty
 
         private double totalHits => countGreat + countGood + countMeh + countMiss;
         private double totalSuccessfulHits => countGreat + countGood + countMeh;
+        private double totalMistimedHits => countGood + countMeh + (countMiss / 2); // assume misses are always mistimed
     }
 }
