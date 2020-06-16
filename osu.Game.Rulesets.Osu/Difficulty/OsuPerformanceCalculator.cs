@@ -282,7 +282,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             // nerf high OD based on the fcontrol sr
             double ODnerf = 50.0 / (fingerControlDiff + 2.2) + 15.0;
             double deviationOnCircles = (greatWindow + ODnerf) / (Math.Sqrt(2) * SpecialFunctions.ErfInv(accOnCirclesPositive));
-            double accuracyValue = Math.Pow(deviationOnCircles, -2.2) * 90000;
+            double accuracyValue = Math.Pow(deviationOnCircles, -2.2) * 95000;
 
             // scale acc pp with misses
             accuracyValue *= Math.Pow(0.96, Math.Max(effectiveMissCount - miss_count_leniency, 0));
@@ -296,10 +296,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             // scale acc pp with finger control
             if (Attributes.FingerControlHardStrains > 0)
             {
-                var mistimes = totalMistimedHits > 1 ? totalMistimedHits : 1; // make SSes and 1x misses not lose any finger bonus
-                accuracyValue *= Math.Sqrt(fingerControlDiff + 1) * Math.Min(Attributes.FingerControlHardStrains / mistimes, 1.0);
+                var mistimes = countGood + countMeh + (countMiss / 2) + 1.0;
+                accuracyValue *= (Math.Sqrt(fingerControlDiff + 1.2) / 1.0955) * Math.Min(Math.Max(Attributes.FingerControlHardStrains / mistimes, 0.7), 1.0);
             }
-            //accuracyValue *= (Math.Sqrt(fingerControlDiff + 1.2) / 1.0955)
             //accuracyValue *= Math.Sqrt((fingerControlDiff + 2.0) / 1.414);
             //accuracyValue *= 1.0 + SpecialFunctions.Logistic((fingerControlDiff - 3) / 0.7) * 2;
             //accuracyValue *= Math.Pow(0.123 * fingerControlDiff + 1.0, 2.0);
@@ -331,6 +330,5 @@ namespace osu.Game.Rulesets.Osu.Difficulty
 
         private double totalHits => countGreat + countGood + countMeh + countMiss;
         private double totalSuccessfulHits => countGreat + countGood + countMeh;
-        private double totalMistimedHits => countGood + countMeh + (countMiss / 2); // assume misses are always mistimed
     }
 }
