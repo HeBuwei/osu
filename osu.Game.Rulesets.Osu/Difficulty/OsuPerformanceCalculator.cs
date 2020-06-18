@@ -297,7 +297,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             if (Attributes.FingerControlHardStrains > 0)
             {
                 var mistimes = countGood + countMeh + (countMiss / 2) + 1.0;
-                accuracyValue *= (Math.Sqrt(fingerControlDiff + 1.2) / 1.0955) * Math.Min(Math.Max(Attributes.FingerControlHardStrains / mistimes, 0.7), 1.0);
+                accuracyValue *= (Math.Sqrt(fingerControlDiff + 1.2) / 1.0955) * (1.0 - SpecialFunctions.Logistic((0.5 - Attributes.FingerControlHardStrains / mistimes) / 0.1));
             }
             //accuracyValue *= Math.Sqrt((fingerControlDiff + 2.0) / 1.414);
             //accuracyValue *= 1.0 + SpecialFunctions.Logistic((fingerControlDiff - 3) / 0.7) * 2;
