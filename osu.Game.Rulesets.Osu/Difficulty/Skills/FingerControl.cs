@@ -309,7 +309,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             List<double> strainHistory = new List<double> { 0 };
             List<double> specificStrainHistory = new List<double> { 0 };
             var sw = new StringWriter();
-            sw.WriteLine($"{hitObjects[1].StartTime} 0 0");
+            sw.WriteLine($"{hitObjects[1].StartTime / 1000.0} 0 0");
 
             var hardStrainsAmount = 0;
 
