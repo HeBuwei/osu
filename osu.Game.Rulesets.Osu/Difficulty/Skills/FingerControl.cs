@@ -18,7 +18,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
     {
         private const double strain_multiplier = 1.3;
         private const double repetition_weight = 0.7;
-        private const double hard_strain_threshold = 1.0;
+        private const double hard_strain_threshold = 1.1;
 
         private double identicalStrainTolerance;
 
@@ -26,7 +26,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         private List<double> noteHistoryVirtual = new List<double>();
         private LinearSpline prevFractionSpline = LinearSpline.InterpolateSorted(
             new double[] { 1.0, 1.5 , 2.0, 3.0, 4.0 },
-            new double[] { 0.5, 1.25, 1.0, 0.5, 0.0 } 
+            new double[] { 0.5, 1.5, 0.9, 0.25, 0.0 } 
         );
         private LinearSpline nextFractionSpline = LinearSpline.InterpolateSorted(
             new double[] { 1.0 , 7.0/6.0, 1.5 , 1.75, 2.0, 3.0, 4.0 },
@@ -221,9 +221,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             double longNoteFraction = Math.Max(0.5, (double)longNoteCount / (double)refNoteHistory.Count);
 
             var slowdownFrac = 1.0;
-            var strainAverage = refNoteHistory.Median();
-            if (strainAverage < strainTime)
-                slowdownFrac = Math.Min(strainTime / strainAverage, 1.2);
+            //var strainAverage = refNoteHistory.Median();
+            //if (strainAverage < strainTime)
+            //    slowdownFrac = Math.Min(strainTime / strainAverage, 1.2);
 
             return Math.Pow(Math.Sin(Math.PI * (longNoteFraction - 1.0)), 2.0) / slowdownFrac;
         }
