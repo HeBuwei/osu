@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using MathNet.Numerics.Interpolation;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics;
+using MathNet.Numerics.Statistics;
 using osu.Game.Rulesets.Osu.Difficulty.MathUtil;
 
 namespace osu.Game.Rulesets.Osu.Difficulty.Skills
@@ -24,12 +25,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         private List<double> noteHistory = new List<double>();
         private List<double> noteHistoryVirtual = new List<double>();
         private LinearSpline prevFractionSpline = LinearSpline.InterpolateSorted(
-            new double[] { 1.0, 1.5, 2.0, 3.0 },
-            new double[] { 0.5, 1.25, 1  , 1   }
+            new double[] { 1.0, 1.5 , 2.0, 3.0, 4.0 },
+            new double[] { 0.5, 1.25, 1.0, 0.5, 0.0 } 
         );
         private LinearSpline nextFractionSpline = LinearSpline.InterpolateSorted(
-            new double[] { 1.0 , 7.0/6.0, 1.5 , 1.75, 2.0 , 3.0 , 4.0 },
-            new double[] { 0.05, 1      , 0.75, 1   , 0.5 , 0   , 0   }
+            new double[] { 1.0 , 7.0/6.0, 1.5 , 1.75, 2.0, 3.0, 4.0 },
+            new double[] { 0.05, 1.0    , 0.75, 1.0 , 0.5, 0.0, 0.0 }
         );
 
         private double compareStrains(double strain1, double strain2, LinearSpline fractionSpline)
@@ -37,7 +38,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             if (strain1 == 0 || strain2 == 0)
                 return 1;
             double fraction = Math.Max(strain1 / strain2, strain2 / strain1);
-            return fractionSpline.Interpolate(fraction);
+            var res = fractionSpline.Interpolate(fraction);
+            if (res < 0) // spline can sometimes dip below 0 which breaks everything 
+                res = 0;
+            return res;
         }
 
         private (double, bool) checkAnomaly(List<double> refNoteHistory)
@@ -217,7 +221,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             double longNoteFraction = Math.Max(0.5, (double)longNoteCount / (double)refNoteHistory.Count);
 
             var slowdownFrac = 1.0;
-            var strainAverage = refNoteHistory.Average();
+            var strainAverage = refNoteHistory.Median();
             if (strainAverage < strainTime)
                 slowdownFrac = Math.Min(strainTime / strainAverage, 1.2);
 
@@ -305,6 +309,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             List<double> strainHistory = new List<double> { 0 };
             List<double> specificStrainHistory = new List<double> { 0 };
             var sw = new StringWriter();
+            sw.WriteLine($"{hitObjects[1].StartTime} 0 0");
 
             var hardStrainsAmount = 0;
 

@@ -59,6 +59,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             var currStrain = Vector<double>.Build.Dense(timescale_count);
 
             var sw = new StringWriter();
+            sw.WriteLine($"{hitObjects[0].StartTime} {currStrain[0]} {currStrain[1]} {currStrain[2]} {currStrain[3]} 0");
+            sw.WriteLine($"{hitObjects[1].StartTime} {currStrain[0]} {currStrain[1]} {currStrain[2]} {currStrain[3]} 0");
 
             // compute strain at each object and store the results into strainHistory
             if (hitObjects.Count >= 2)
