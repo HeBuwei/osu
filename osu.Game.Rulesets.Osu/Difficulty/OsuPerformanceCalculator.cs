@@ -115,7 +115,16 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double tapValue = computeTapValue();
             double accuracyValue = computeAccuracyValue();
 
-            double totalValue = Mean.PowerMean(new double[] { aimValue, tapValue, accuracyValue }, total_value_exponent) * multiplier;
+            var valuesSorted = new List<double> { aimValue, tapValue, accuracyValue };
+            valuesSorted.Sort();
+            valuesSorted.Reverse();
+
+            double lowestValue = valuesSorted.Last();
+            double highestValue = valuesSorted.First();
+            double differenceRatio = highestValue / lowestValue;
+
+            double totalValue =  Mean.PowerMean(new double[] { aimValue, tapValue, accuracyValue, lowestValue * Math.Max(1.0, differenceRatio / 5) }, total_value_exponent) * multiplier * 1.12;
+            //double totalValue = Mean.PowerMean(new double[] { aimValue, tapValue, accuracyValue }, total_value_exponent) * multiplier;
 
             if (categoryRatings != null)
             {
@@ -189,7 +198,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             aimValue *= Math.Pow(0.96, Math.Max(effectiveMissCount - miss_count_leniency, 0));
 
             // Buff long maps
-            aimValue *= 1 + (SpecialFunctions.Logistic((totalHits - 2800) / 500.0) - SpecialFunctions.Logistic(-2800 / 500.0)) * 0.22;
+            aimValue *= 1 + (SpecialFunctions.Logistic((totalHits - 2800) / 500.0) - SpecialFunctions.Logistic(-2800 / 500.0)) * 0.20;
 
             // Buff very high AR and low AR
             double approachRateFactor = 1.0;
