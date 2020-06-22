@@ -87,7 +87,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double highestValue = valuesSorted.First();
             double differenceRatio = highestValue / lowestValue;
 
-            double sr = Mean.PowerMean(new double[] { tapSr, aimSr, fingerControlSr, lowestValue * Math.Max(1.0, differenceRatio / 5) }, 7) * 1.131 * 1.0;
+            double sr = Mean.PowerMean(new double[] { tapSr, aimSr, fingerControlSr, lowestValue * Math.Max(1.0, differenceRatio / 4) }, 7) * 1.131 * 1.0;
 
             //double sr = Mean.PowerMean(new double[] { tapSr, aimSr, fingerControlSr }, 7) * 1.131;
 

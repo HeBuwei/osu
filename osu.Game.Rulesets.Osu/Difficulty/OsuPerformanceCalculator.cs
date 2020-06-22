@@ -123,7 +123,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double highestValue = valuesSorted.First();
             double differenceRatio = highestValue / lowestValue;
 
-            double totalValue =  Mean.PowerMean(new double[] { aimValue, tapValue, accuracyValue, lowestValue * Math.Max(1.0, differenceRatio / 5) }, total_value_exponent) * multiplier * 1.12;
+            double totalValue =  Mean.PowerMean(new double[] { aimValue, tapValue, accuracyValue, lowestValue * Math.Max(1.0, differenceRatio / 4) }, total_value_exponent) * multiplier * 1.12;
             //double totalValue = Mean.PowerMean(new double[] { aimValue, tapValue, accuracyValue }, total_value_exponent) * multiplier;
 
             if (categoryRatings != null)
@@ -302,13 +302,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                                   SpecialFunctions.Logistic(Attributes.Length / 60.0);
             accuracyValue *= lengthFactor;
 
-            // scale acc pp with finger control
+            // scale finger control bonus with acc
             if (Attributes.FingerControlHardStrains > 0)
             {
                 var mistimes = countGood + countMeh + (countMiss / 2) + 1.0;
-                accuracyValue *= (Math.Sqrt(fingerControlDiff + 1.2) / 1.0955) * (1.0 - SpecialFunctions.Logistic((0.5 - Attributes.FingerControlHardStrains / mistimes) / 0.1) * 0.3);
+                accuracyValue *= (Math.Sqrt(fingerControlDiff + 2.0) / 1.414) * (1.0 - SpecialFunctions.Logistic((0.5 - Attributes.FingerControlHardStrains / mistimes) / 0.1) * 0.3);
             }
-            //accuracyValue *= Math.Sqrt((fingerControlDiff + 2.0) / 1.414);
+            //(Math.Sqrt(fingerControlDiff + 1.2) / 1.0955)
+            //accuracyValue *= Math.Sqrt(fingerControlDiff + 2.0) / 1.414;
             //accuracyValue *= 1.0 + SpecialFunctions.Logistic((fingerControlDiff - 3) / 0.7) * 2;
             //accuracyValue *= Math.Pow(0.123 * fingerControlDiff + 1.0, 2.0);
 
