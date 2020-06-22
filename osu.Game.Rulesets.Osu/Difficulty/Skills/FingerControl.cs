@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using MathNet.Numerics.Interpolation;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics;
-using MathNet.Numerics.Statistics;
 using osu.Game.Rulesets.Osu.Difficulty.MathUtil;
 
 namespace osu.Game.Rulesets.Osu.Difficulty.Skills
@@ -179,7 +178,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 double ratio = Math.Min(1, (double)Math.Max(patternInstance, reversePatternInstance) / (double)possibleInstances);
                 // There are cases where it's possible the counter makes this ratio more than 1 due to the checking method being if notes
                 // fall within a range of 16 ms. As a result a max is required to cap at 1.
-    
+
                 if (ratio > maxRepetition)
                 {
                     maxRepetition = ratio;
@@ -193,7 +192,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             // Punish patterns that are longer more, pattern size of 2 gets 0 value while pattern size 8+ get 1
             double patternLength = Math.Pow(Math.Sin(Math.PI * (Math.Min(maxSize, 8) - 2) / 12), 2.0);
-            
+
+            var fractionMultiplier = compareStrains(strainTime, refNoteHistory[1], prevFractionSpline);
+
             refNoteHistory.Reverse();
             double repetitionVal = Math.Min(1.0, Math.Sqrt(maxRepetition) + patternLength);
 
@@ -204,7 +205,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 double uniqueScale = Math.Pow(
                     Math.Pow(- Math.Min(7.0, anomalyVal - 1.0) / 7.0, 5.0) + 1.0,
                 2.0);
-                repetitionVal = Math.Min(1, repetitionVal + uniqueScale);
+                repetitionVal = Math.Max(Math.Min(1, repetitionVal + uniqueScale - fractionMultiplier), 0.0);
             }
 
             return repetitionVal;
