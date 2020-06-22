@@ -295,7 +295,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             }
 
             var strain = repetitionVal * multiplier * downtimeScale * appearanceScale * uniqueScale * tapCorrection / strainTime;
-            return 0.30 * Math.Exp(-1.5 * strain) + strain;
+            return /*0.30 * Math.Exp(-1.5 * strain) + */strain;
         }
 
         public (double, string, List<double>, int) CalculateFingerControlDiff(List<OsuHitObject> hitObjects, double clockRate, List<Vector<double>> tapStrainHistory, double greatHitWindow)
