@@ -103,15 +103,15 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing.MovementCorrections
         /// <summary>
         /// Estimate how next object affects the difficulty of hitting current object
         /// </summary>
-        /// <param name="obj3">Object 0</param>
-        /// <param name="t12">Time between object 1 and current object</param>
-        /// <param name="t23">Time between current object and next object</param>
-        /// <param name="d12">Distance between object 1 and current object</param>
-        /// <param name="d23">Distance between current object and object 1</param>
-        /// <param name="s12">Normalized distance between object 1 and current object</param>
-        /// <param name="s23">Normalized distance between current object and next object</param>
-        /// <param name="flowiness123"></param>
-        /// <param name="obj2InTheMiddle"></param>
+        /// <param name="obj3">Next object</param>
+        /// <param name="t12">Time between previous and current objects</param>
+        /// <param name="t23">Time between current and next objects</param>
+        /// <param name="d12">Distance between previous and current objects</param>
+        /// <param name="d23">Distance between current and next objects</param>
+        /// <param name="s12">Displacement between previous and current objects</param>
+        /// <param name="s23">Displacement between current and next objects</param>
+        /// <param name="flowiness123">How "flowy" movement is</param>
+        /// <param name="obj2InTheMiddle">Is current object temporally in the middle between previous and next</param>
         /// <returns>Correction value</returns>
         public static double Calculate(OsuHitObject obj3, double t12, double t23, double d12, double d23, Vector<double> s12, Vector<double> s23, out double flowiness123, out bool obj2InTheMiddle)
         {

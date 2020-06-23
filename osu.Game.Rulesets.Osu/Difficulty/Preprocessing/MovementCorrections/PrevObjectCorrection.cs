@@ -101,17 +101,17 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing.MovementCorrections
         }
 
         /// <summary>
-        /// Estimate how object 0 affects the difficulty of hitting current object
+        /// Estimate how prevprev object affects the difficulty of hitting current object
         /// </summary>
-        /// <param name="obj0">Object 0</param>
-        /// <param name="t01">Time between object 0 and object 1</param>
-        /// <param name="t12">Time between object 1 and current object</param>
-        /// <param name="d01">Distance between object 0 and object 1</param>
-        /// <param name="d12">Distance between object 1 and current object</param>
-        /// <param name="s01">Normalized distance between object 0 and object 1</param>
-        /// <param name="s12">Normalized distance between object 1 and current object</param>
-        /// <param name="flowiness012"></param>
-        /// <param name="obj1InTheMiddle"></param>
+        /// <param name="obj0">Prevprev object</param>
+        /// <param name="t01">Time between prevprev and previous objects</param>
+        /// <param name="t12">Time between previous and current objects</param>
+        /// <param name="d01">Distance between prevprev and previous objects</param>
+        /// <param name="d12">Distance between previous and current objects</param>
+        /// <param name="s01">Displacement between prevprev and previous objects</param>
+        /// <param name="s12">Displacement between previous and current objects</param>
+        /// <param name="flowiness012">How "flowy" the movement is</param>
+        /// <param name="obj1InTheMiddle">Is previous object temporally in the middle between current and prevprev</param>
         /// <returns>Correction value</returns>
         public static double Calculate(OsuHitObject obj0, double t01, double t12, double d01, double d12, Vector<double> s01, Vector<double> s12, out double flowiness012, out bool obj1InTheMiddle)
         {
