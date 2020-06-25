@@ -56,7 +56,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
         /// </summary>
         public static List<OsuMovement> ExtractMovement(OsuHitObject obj0, OsuHitObject obj1, OsuHitObject obj2, OsuHitObject obj3,
                                                         Vector<double> tapStrain, double clockRate,
-                                                        bool hidden = false, double noteDensity = 0, OsuHitObject objMinus1 = null, OsuHitObject objMinus2 = null)
+                                                        bool hidden = false, double noteDensity = 0, OsuHitObject objMinus2 = null)
         {
             var movement = new OsuMovement();
 
