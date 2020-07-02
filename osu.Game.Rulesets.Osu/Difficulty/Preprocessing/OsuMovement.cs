@@ -528,10 +528,25 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
                 distanceIncreaseBuff = 1 + 0.225 * bpmScaling * timeDifferenceNerf * d01OverlapNerf * Math.Max(0, distanceRatio - 2);
             }
 
+            var streamJumpBuff = 0.0;
+            // Correction #15 - Buff sudden single distance increase in 4-object flowy patterns (jumps in streams)
+            if (obj1InTheMiddle && obj2InTheMiddle)
+            {
+                var streamSpacingMean = Mean.PowerMean(d01, d23, 1.5);
+
+                if (d12 > streamSpacingMean)
+                {
+                    var distanceDifference = d12 - streamSpacingMean;
+                    streamJumpBuff = SpecialFunctions.Logistic((distanceDifference - 0.55) / 0.08) *
+                                     (1.0 - Math.Exp(-Mean.PowerMean(flowiness012, flowiness123, 8) * 3.5)) *
+                                     SpecialFunctions.Logistic((streamSpacingMean - 0.5) / 0.07) * 0.42;
+                }
+            }
+
             // Apply the corrections
             double d12WithCorrection = d12StackedNerf * (1 + smallCircleBonus) * (1 + correction0 + correction3 + patternCorrection) *
                                        (1 + highBpmJumpBuff) * (1 + tapCorrection) * smallJumpNerfFactor * bigJumpBuffFactor * (1 + correctionHidden) *
-                                       jumpOverlapCorrection * distanceIncreaseBuff;
+                                       jumpOverlapCorrection * distanceIncreaseBuff * (1 + streamJumpBuff);
 
             movement.D = d12WithCorrection;
             movement.Mt = t12;
