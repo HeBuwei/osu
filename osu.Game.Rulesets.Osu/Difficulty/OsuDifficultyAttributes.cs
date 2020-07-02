@@ -16,6 +16,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         public double FingerControlDiff;
         public int FingerControlHardStrains;
 
+        public double ReadingSr;
+        public double ReadingDiff;
+
         public double AimSr;
         public double AimDiff;
         public double AimHiddenFactor;

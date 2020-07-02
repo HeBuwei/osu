@@ -59,6 +59,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             // Finger Control
             (double fingerControlDiff, string fingerGraph, List<double> fingerStrainHistory, int hardFingerStrainAmount) = new FingerControl().CalculateFingerControlDiff(hitObjects, clockRate, strainHistory, hitWindowGreat);
 
+            // Reading
+            var readingDiff = Reading.CalculateReadingDiff(hitObjects, noteDensities, clockRate);
+
             // Aim
             (var aimDiff, var aimHiddenFactor, var comboTps, var missTps, var missCounts,
              var cheeseNoteCount, var cheeseLevels, var cheeseFactors, var graphText) =
@@ -78,6 +81,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double tapSr = tap_multiplier * Math.Pow(tapDiff, sr_exponent);
             double aimSr = aim_multiplier * Math.Pow(aimDiff, sr_exponent);
             double fingerControlSr = finger_control_multiplier * Math.Pow(fingerControlDiff, sr_exponent);
+            double readingSr = aim_multiplier * Math.Pow(readingDiff, sr_exponent);
+            double sr = Mean.PowerMean(new[] { tapSr, aimSr, fingerControlSr, readingSr }, 7) * 1.131;
 
             double sr = Mean.PowerMean(new double[] { tapSr, aimSr, fingerControlSr }, 7) * 1.131;
 
@@ -99,6 +104,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 FingerControlSr = fingerControlSr,
                 FingerControlDiff = fingerControlDiff,
                 FingerControlHardStrains = hardFingerStrainAmount,
+
+                ReadingSr = readingSr,
+                ReadingDiff = readingDiff,
 
                 AimSr = aimSr,
                 AimDiff = aimDiff,

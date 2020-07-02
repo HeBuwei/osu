@@ -114,8 +114,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double aimValue = computeAimValue();
             double tapValue = computeTapValue();
             double accuracyValue = computeAccuracyValue();
+            double readingValue = computeReadingValue();
 
-            double totalValue = Mean.PowerMean(new double[] { aimValue, tapValue, accuracyValue }, total_value_exponent) * multiplier;
+            double totalValue = Mean.PowerMean(new[] { aimValue + readingValue, tapValue, accuracyValue }, total_value_exponent) * multiplier;
 
             if (categoryRatings != null)
             {
@@ -312,6 +313,17 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             return accuracyValue;
         }
 
+        private double computeReadingValue()
+        {
+            double readingDiff = Attributes.ReadingDiff;
+
+            if (mods.Any(m => m is OsuModFlashlight))
+                readingDiff *= 1.02;
+
+            return readingDiffToPP(readingDiff);
+        }
+
+
         private double getModifiedAcc()
         {
             // Treat 300 as 300, 100 as 200, 50 as 100
@@ -328,6 +340,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         private double tapSkillToPP(double tapSkill) => Math.Pow(tapSkill, skill_to_pp_exponent) * 0.115;
 
         private double fingerControlDiffToPP(double fingerControlDiff) => Math.Pow(fingerControlDiff, skill_to_pp_exponent);
+
+        private double readingDiffToPP(double readingDiff) => Math.Pow(readingDiff, skill_to_pp_exponent);
 
         private double totalHits => countGreat + countGood + countMeh + countMiss;
         private double totalSuccessfulHits => countGreat + countGood + countMeh;
