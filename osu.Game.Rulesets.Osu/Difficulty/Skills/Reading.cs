@@ -9,6 +9,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 {
     public static class Reading
     {
+        private const double multiplier = 10.0;
+
         /// <summary>
         /// Calculates reading difficulty of the map
         /// </summary>
@@ -20,58 +22,39 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             var sw = new StringWriter();
             sw.WriteLine($"{hitObjects[0].StartTime / 1000.0} 0 0");
 
-            double currStrain = 0;
+            //double currStrain = 0;
             var strainHistory = new List<double> { 0, 0 }; // first and last objects are 0
 
             for (int i = 1; i < hitObjects.Count - 1; i++)
             {
-                var currentObject = hitObjects[i];
-                var currentPosition = Vector<double>.Build.Dense(new[] { currentObject.Position.X, (double)currentObject.Position.Y });
-                var currentFingerStrain = fingerStrains[i];
+                var noteDensity = (int)Math.Floor(noteDensities[i]) - 1; // exclude current circle
+                if (noteDensity > hitObjects.Count - i)
+                    noteDensity = hitObjects.Count - i;
 
+                // need better decaying or no decaying at all (why would reading decay anyway?)
+                //currStrain *= 0.2 + SpecialFunctions.Logistic((noteDensity - 3) / 0.7) * 0.7;
+
+                var currentObject = hitObjects[i];
                 if (currentObject is Spinner)
                 {
                     strainHistory.Add(0);
                     continue;
                 }
 
-                var noteDensity = (int)Math.Floor(noteDensities[i]) - 1; // exclude current circle
-                if (noteDensity > hitObjects.Count - i)
-                    noteDensity = hitObjects.Count - i;
-
-                var overlapness = 0.0;
-                var intersections = 0.0;
-                if (noteDensity > 1 )
+                var rhythmReadingComplexity = 0.0;
+                var aimReadingComplexity = 0.0;
+                if (noteDensity > 1)
                 {
-                   var visibleObjects = hitObjects.GetRange(i, noteDensity);
-                    foreach (var visibleObject in visibleObjects)
-                    {
-                        // calculate how much visible objects overlap current object
-                        var visibleObjectPosition = Vector<double>.Build.Dense(new[] { visibleObject.Position.X, (double)visibleObject.Position.Y });
-                        var distance = ((currentPosition - visibleObjectPosition) / (2 * currentObject.Radius)).L2Norm();
-                        overlapness += SpecialFunctions.Logistic((0.5 - distance) / 0.1) - 0.2;
-                        overlapness = Math.Max(0, overlapness);
-                    }
-
-                    var nextObject = hitObjects[i + 1];
-                    var nextPosition = Vector<double>.Build.Dense(new[] { nextObject.Position.X, (double)nextObject.Position.Y });
-                    var nextVector = currentPosition - nextPosition;
-
-                    foreach (var visibleObject in visibleObjects)
-                    {
-                        // calculate amount of circles intersecting the movement
-                        var visibleObjectPosition = Vector<double>.Build.Dense(new[] { visibleObject.Position.X, (double)visibleObject.Position.Y });
-                        var visibleVector = currentPosition - visibleObjectPosition;
-                        intersections += checkMovementIntersect(nextVector, nextObject.Radius * 2, visibleVector);
-                    }
+                    var visibleObjects = hitObjects.GetRange(i, noteDensity);
                     
+                    rhythmReadingComplexity = calculateRhythmReading(visibleObjects, currentObject, fingerStrains[i]);
+                    aimReadingComplexity = calculateAimReading(visibleObjects, currentObject, hitObjects[i + 1]);
                 }
 
-                var strain = (currentFingerStrain * overlapness) + intersections;
-                currStrain += strain;
+                var strain = rhythmReadingComplexity + aimReadingComplexity * multiplier;
                 strainHistory.Add(strain);
 
-                sw.WriteLine($"{hitObjects[i].StartTime / 1000.0} {currStrain} {strain}");
+                sw.WriteLine($"{hitObjects[i].StartTime / 1000.0} {strain} {strain}");
             }
 
             // aggregate strain values to compute difficulty
@@ -91,6 +74,61 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             return (diff * (1 - k) * 1.1, sw.ToString());
         }
+
+        private static double calculateRhythmReading(List<OsuHitObject> visibleObjects, OsuHitObject currentObject, double currentFingerStrain)
+        {
+            var overlapness = 0.0;
+            var currentPosition = Vector<double>.Build.Dense(new[] { currentObject.StackedPosition.X, (double)currentObject.StackedPosition.Y });
+
+            // calculate how much visible objects overlap current object
+            foreach (var visibleObject in visibleObjects)
+            {
+                var visibleObjectPosition = Vector<double>.Build.Dense(new[] { visibleObject.StackedPosition.X, (double)visibleObject.StackedPosition.Y });
+                var visibleDistance = ((currentPosition - visibleObjectPosition) / (2 * currentObject.Radius)).L2Norm();
+
+                overlapness += SpecialFunctions.Logistic((0.5 - visibleDistance) / 0.1) - 0.2;
+
+                // this is temp until sliders get proper reading impl
+                if (visibleObject is Slider)
+                    overlapness /= 2.0;
+
+                overlapness = Math.Max(0, overlapness);
+            }
+
+            return Math.Pow(0.3, 2 / currentFingerStrain) * overlapness;
+        }
+
+        private static double calculateAimReading(List<OsuHitObject> visibleObjects, OsuHitObject currentObject, OsuHitObject nextObject)
+        {
+            var intersections = 0.0;
+
+            var currentPosition = Vector<double>.Build.Dense(new[] { currentObject.StackedPosition.X, (double)currentObject.StackedPosition.Y });
+            var nextPosition = Vector<double>.Build.Dense(new[] { nextObject.StackedPosition.X, (double)nextObject.StackedPosition.Y });
+            var nextVector = currentPosition - nextPosition;
+            var movementDistance = ((nextPosition - currentPosition) / (2 * currentObject.Radius)).L2Norm();
+
+            // calculate amount of circles intersecting the movement
+            foreach (var visibleObject in visibleObjects)
+            {
+                var visibleObjectPosition = Vector<double>.Build.Dense(new[] { visibleObject.StackedPosition.X, (double)visibleObject.StackedPosition.Y });
+                var visibleVector = currentPosition - visibleObjectPosition;
+                var visibleToNextDistance = ((nextPosition - visibleObjectPosition) / (2 * currentObject.Radius)).L2Norm();
+
+                // scale the bonus by distance of movement and distance between intersected object and movement end object
+                var intersectionBonus = checkMovementIntersect(nextVector, nextObject.Radius * 2, visibleVector) *
+                                        SpecialFunctions.Logistic((movementDistance - 3) / 0.7) *
+                                        SpecialFunctions.Logistic((3 - visibleToNextDistance) / 0.7);
+
+                // this is temp until sliders get proper reading impl
+                if (visibleObject is Slider)
+                    intersectionBonus *= 2.0;
+
+                intersections += intersectionBonus;
+            }
+
+            return intersections / visibleObjects.Count;
+        }
+
 
         private static double checkMovementIntersect(Vector<double> direction, double radius, Vector<double> endPoint)
         {
@@ -121,7 +159,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 // inside the sphere or completely past it
                 if (t2 >= 0 && t2 <= 1)
                 {
-                    // ExitWound
                     return 0.5;
                 }
 

@@ -26,6 +26,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         private const double aim_multiplier = 0.641;
         private const double tap_multiplier = 0.641;
         private const double finger_control_multiplier = 1.245;
+        private const double reading_multiplier = 1.2;
 
         private const double sr_exponent = 0.83;
 
@@ -80,13 +81,13 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             File.WriteAllText(graphFingerFilePath, fingerGraph);
 
             // graph for reading
-            string graphReadingFilePath = Path.Combine("cache", $"graph_{beatmap.BeatmapInfo.OnlineBeatmapID}_{string.Join(string.Empty, mods.Select(x => x.Acronym))}_reding.txt");
+            string graphReadingFilePath = Path.Combine("cache", $"graph_{beatmap.BeatmapInfo.OnlineBeatmapID}_{string.Join(string.Empty, mods.Select(x => x.Acronym))}_reading.txt");
             File.WriteAllText(graphReadingFilePath, readingGraph);
 
             double tapSr = tap_multiplier * Math.Pow(tapDiff, sr_exponent);
             double aimSr = aim_multiplier * Math.Pow(aimDiff, sr_exponent);
             double fingerControlSr = finger_control_multiplier * Math.Pow(fingerControlDiff, sr_exponent);
-            double readingSr = aim_multiplier * Math.Pow(readingDiff, sr_exponent);
+            double readingSr = reading_multiplier * Math.Pow(readingDiff, sr_exponent);
 
             double sr = Mean.PowerMean(new[] { tapSr, aimSr, fingerControlSr, readingSr }, 7) * 1.131;
 
