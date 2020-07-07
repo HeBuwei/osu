@@ -79,17 +79,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double aimSr = aim_multiplier * Math.Pow(aimDiff, sr_exponent);
             double fingerControlSr = finger_control_multiplier * Math.Pow(fingerControlDiff, sr_exponent);
 
-            var valuesSorted = new List<double> { aimSr, tapSr, fingerControlSr };
-            valuesSorted.Sort();
-            valuesSorted.Reverse();
-
-            double lowestValue = valuesSorted.Last();
-            double highestValue = valuesSorted.First();
-            double differenceRatio = highestValue / lowestValue;
-
-            double sr = Mean.PowerMean(new double[] { tapSr, aimSr, fingerControlSr, lowestValue * Math.Max(1.0, differenceRatio / 4) }, 7) * 1.131 * 1.0;
-
-            //double sr = Mean.PowerMean(new double[] { tapSr, aimSr, fingerControlSr }, 7) * 1.131;
+            double sr = Mean.PowerMean(new double[] { tapSr, aimSr, fingerControlSr }, 7) * 1.131;
 
             int maxCombo = beatmap.HitObjects.Count;
             // Add the ticks + tail of the slider. 1 is subtracted because the head circle would be counted twice (once for the slider itself in the line above)
