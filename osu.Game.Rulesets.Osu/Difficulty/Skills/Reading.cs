@@ -46,9 +46,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 if (noteDensity > 1)
                 {
                     var visibleObjects = hitObjects.GetRange(i, noteDensity);
-                    
-                    rhythmReadingComplexity = calculateRhythmReading(visibleObjects, currentObject, fingerStrains[i]);
-                    aimReadingComplexity = calculateAimReading(visibleObjects, currentObject, hitObjects[i + 1]);
+                    var nextObject = hitObjects[i + 1];
+
+                    rhythmReadingComplexity = calculateRhythmReading(visibleObjects, hitObjects[i - 1], currentObject, nextObject, fingerStrains[i], clockRate);
+                    aimReadingComplexity = calculateAimReading(visibleObjects, currentObject, nextObject);
                 }
 
                 var strain = rhythmReadingComplexity + aimReadingComplexity * multiplier;
@@ -75,10 +76,17 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             return (diff * (1 - k) * 1.1, sw.ToString());
         }
 
-        private static double calculateRhythmReading(List<OsuHitObject> visibleObjects, OsuHitObject currentObject, double currentFingerStrain)
+        private static double calculateRhythmReading(List<OsuHitObject> visibleObjects,
+                                                     OsuHitObject prevObject,
+                                                     OsuHitObject currentObject,
+                                                     OsuHitObject nextObject,
+                                                     double currentFingerStrain,
+                                                     double clockRate)
         {
             var overlapness = 0.0;
+            var prevPosition = Vector<double>.Build.Dense(new[] { prevObject.StackedPosition.X, (double)prevObject.StackedPosition.Y });
             var currentPosition = Vector<double>.Build.Dense(new[] { currentObject.StackedPosition.X, (double)currentObject.StackedPosition.Y });
+            var nextPosition = Vector<double>.Build.Dense(new[] { nextObject.StackedPosition.X, (double)nextObject.StackedPosition.Y });
 
             // calculate how much visible objects overlap current object
             foreach (var visibleObject in visibleObjects)
@@ -95,7 +103,21 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 overlapness = Math.Max(0, overlapness);
             }
 
-            return Math.Pow(0.3, 2 / currentFingerStrain) * overlapness;
+            var spacingChange = 1.0;
+
+            var tPrevCurr = (currentObject.StartTime - prevObject.StartTime) / clockRate;
+            var tCurrNext = (nextObject.StartTime - currentObject.StartTime) / clockRate;
+            var tRatio = tCurrNext / tPrevCurr + 1e-10;
+
+            var prevCurrDistance = ((currentPosition - prevPosition) / (2 * currentObject.Radius)).L2Norm();
+            var currNextDistance = ((nextPosition - currentPosition) / (2 * currentObject.Radius)).L2Norm();
+            var distanceRatio = currNextDistance / prevCurrDistance + 1e-10;
+
+            var changeRatio = distanceRatio / tRatio;
+            spacingChange = 1.0 + SpecialFunctions.Logistic((0.7 - changeRatio) / 0.05) * 0.2 +
+                            SpecialFunctions.Logistic((changeRatio - 1.3) / 0.05) * 0.2;
+
+            return Math.Pow(0.3, 2 / currentFingerStrain) * overlapness * spacingChange;
         }
 
         private static double calculateAimReading(List<OsuHitObject> visibleObjects, OsuHitObject currentObject, OsuHitObject nextObject)

@@ -342,7 +342,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
 
         private double fingerControlDiffToPP(double fingerControlDiff) => Math.Pow(fingerControlDiff, skill_to_pp_exponent);
 
-        private double readingDiffToPP(double readingDiff) => Math.Pow(readingDiff, skill_to_pp_exponent) * 20.0;
+        private double readingDiffToPP(double readingDiff) => Math.Pow(readingDiff, skill_to_pp_exponent) * 50.0;
 
         private double totalHits => countGreat + countGood + countMeh + countMiss;
         private double totalSuccessfulHits => countGreat + countGood + countMeh;
