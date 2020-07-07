@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using MathNet.Numerics;
 using MathNet.Numerics.LinearAlgebra;
 using osu.Game.Rulesets.Osu.Objects;
@@ -11,10 +12,13 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         /// <summary>
         /// Calculates reading difficulty of the map
         /// </summary>
-        public static double CalculateReadingDiff(List<OsuHitObject> hitObjects, List<double> noteDensities, double clockRate)
+        public static (double, string) CalculateReadingDiff(List<OsuHitObject> hitObjects, List<double> noteDensities, List<double> fingerStrains, double clockRate)
         {
             if (hitObjects.Count == 0)
-                return 0;
+                return (0, string.Empty);
+
+            var sw = new StringWriter();
+            sw.WriteLine($"{hitObjects[0].StartTime / 1000.0} 0 0");
 
             double currStrain = 0;
             var strainHistory = new List<double> { 0, 0 }; // first and last objects are 0
@@ -23,6 +27,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             {
                 var currentObject = hitObjects[i];
                 var currentPosition = Vector<double>.Build.Dense(new[] { currentObject.Position.X, (double)currentObject.Position.Y });
+                var currentFingerStrain = fingerStrains[i];
 
                 if (currentObject is Spinner)
                 {
@@ -39,14 +44,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 if (noteDensity > 1 )
                 {
                    var visibleObjects = hitObjects.GetRange(i, noteDensity);
-                    /*foreach (var visibleObject in visibleObjects)
+                    foreach (var visibleObject in visibleObjects)
                     {
+                        // calculate how much visible objects overlap current object
                         var visibleObjectPosition = Vector<double>.Build.Dense(new[] { visibleObject.Position.X, (double)visibleObject.Position.Y });
                         var distance = ((currentPosition - visibleObjectPosition) / (2 * currentObject.Radius)).L2Norm();
                         overlapness += SpecialFunctions.Logistic((0.5 - distance) / 0.1) - 0.2;
                         overlapness = Math.Max(0, overlapness);
-                    }*/
-
+                    }
 
                     var nextObject = hitObjects[i + 1];
                     var nextPosition = Vector<double>.Build.Dense(new[] { nextObject.Position.X, (double)nextObject.Position.Y });
@@ -54,6 +59,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
                     foreach (var visibleObject in visibleObjects)
                     {
+                        // calculate amount of circles intersecting the movement
                         var visibleObjectPosition = Vector<double>.Build.Dense(new[] { visibleObject.Position.X, (double)visibleObject.Position.Y });
                         var visibleVector = currentPosition - visibleObjectPosition;
                         intersections += checkMovementIntersect(nextVector, nextObject.Radius * 2, visibleVector);
@@ -61,9 +67,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                     
                 }
 
-                var strain = overlapness + intersections;
+                var strain = (currentFingerStrain * overlapness) + intersections;
                 currStrain += strain;
                 strainHistory.Add(strain);
+
+                sw.WriteLine($"{hitObjects[i].StartTime / 1000.0} {currStrain} {strain}");
             }
 
             // aggregate strain values to compute difficulty
@@ -81,14 +89,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 diff += strainHistoryArray[i] * Math.Pow(k, i);
             }
 
-            return diff * (1 - k) * 1.1;
+            return (diff * (1 - k) * 1.1, sw.ToString());
         }
 
-        private static double checkMovementIntersect(Vector<double> d, double r, Vector<double> f)
+        private static double checkMovementIntersect(Vector<double> direction, double radius, Vector<double> endPoint)
         {
-            double a = d.DotProduct(d);
-            double b = 2 * f.DotProduct(d);
-            double c = f.DotProduct(f) - r * r;
+            double a = direction.DotProduct(direction);
+            double b = 2 * endPoint.DotProduct(direction);
+            double c = endPoint.DotProduct(endPoint) - radius * radius;
 
             double discriminant = b * b - 4 * a * c;
             if (discriminant < 0)
@@ -98,31 +106,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             }
             else
             {
-                // ray didn't totally miss sphere,
-                // so there is a solution to
-                // the equation.
-
                 discriminant = Math.Sqrt(discriminant);
 
-                // either solution may be on or off the ray so need to test both
-                // t1 is always the smaller value, because BOTH discriminant and
-                // a are nonnegative.
                 double t1 = (-b - discriminant) / (2 * a);
                 double t2 = (-b + discriminant) / (2 * a);
-
-                // 3x HIT cases:
-                //          -o->             --|-->  |            |  --|->
-                // Impale(t1 hit,t2 hit), Poke(t1 hit,t2>1), ExitWound(t1<0, t2 hit), 
-
-                // 3x MISS cases:
-                //       ->  o                     o ->              | -> |
-                // FallShort (t1>1,t2>1), Past (t1<0,t2<0), CompletelyInside(t1<0, t2>1)
 
                 if (t1 >= 0 && t1 <= 1)
                 {
                     // t1 is the intersection, and it's closer than t2
-                    // (since t1 uses -b - discriminant)
-                    // Impale, Poke
                     return 1.0;
                 }
 
@@ -134,7 +125,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                     return 0.5;
                 }
 
-                // no intn: FallShort, Past, CompletelyInside
                 return 0.0;
             }
         }

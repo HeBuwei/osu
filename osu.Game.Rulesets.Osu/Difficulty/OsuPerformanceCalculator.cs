@@ -123,6 +123,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 categoryRatings.Add("Aim", aimValue);
                 categoryRatings.Add("Tap", tapValue);
                 categoryRatings.Add("Accuracy", accuracyValue);
+                categoryRatings.Add("Reading", readingValue);
                 categoryRatings.Add("OD", Attributes.OverallDifficulty);
                 categoryRatings.Add("AR", Attributes.ApproachRate);
                 categoryRatings.Add("Max Combo", beatmapMaxCombo);

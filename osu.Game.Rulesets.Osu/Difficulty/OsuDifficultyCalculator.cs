@@ -60,7 +60,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             (double fingerControlDiff, string fingerGraph, List<double> fingerStrainHistory, int hardFingerStrainAmount) = new FingerControl().CalculateFingerControlDiff(hitObjects, clockRate, strainHistory, hitWindowGreat);
 
             // Reading
-            var readingDiff = Reading.CalculateReadingDiff(hitObjects, noteDensities, clockRate);
+            var (readingDiff, readingGraph) = Reading.CalculateReadingDiff(hitObjects, noteDensities, fingerStrainHistory, clockRate);
 
             // Aim
             (var aimDiff, var aimHiddenFactor, var comboTps, var missTps, var missCounts,
@@ -78,13 +78,17 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             // graph for finger
             string graphFingerFilePath = Path.Combine("cache", $"graph_{beatmap.BeatmapInfo.OnlineBeatmapID}_{string.Join(string.Empty, mods.Select(x => x.Acronym))}_finger.txt");
             File.WriteAllText(graphFingerFilePath, fingerGraph);
+
+            // graph for reading
+            string graphReadingFilePath = Path.Combine("cache", $"graph_{beatmap.BeatmapInfo.OnlineBeatmapID}_{string.Join(string.Empty, mods.Select(x => x.Acronym))}_reding.txt");
+            File.WriteAllText(graphReadingFilePath, readingGraph);
+
             double tapSr = tap_multiplier * Math.Pow(tapDiff, sr_exponent);
             double aimSr = aim_multiplier * Math.Pow(aimDiff, sr_exponent);
             double fingerControlSr = finger_control_multiplier * Math.Pow(fingerControlDiff, sr_exponent);
             double readingSr = aim_multiplier * Math.Pow(readingDiff, sr_exponent);
-            double sr = Mean.PowerMean(new[] { tapSr, aimSr, fingerControlSr, readingSr }, 7) * 1.131;
 
-            double sr = Mean.PowerMean(new double[] { tapSr, aimSr, fingerControlSr }, 7) * 1.131;
+            double sr = Mean.PowerMean(new[] { tapSr, aimSr, fingerControlSr, readingSr }, 7) * 1.131;
 
             int maxCombo = beatmap.HitObjects.Count;
             // Add the ticks + tail of the slider. 1 is subtracted because the head circle would be counted twice (once for the slider itself in the line above)
