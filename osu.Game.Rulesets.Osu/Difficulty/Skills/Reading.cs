@@ -14,7 +14,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         /// <summary>
         /// Calculates reading difficulty of the map
         /// </summary>
-        public static (double, string) CalculateReadingDiff(List<OsuHitObject> hitObjects, List<double> noteDensities, List<double> fingerStrains, double clockRate)
+        public static (double, string) CalculateReadingDiff(List<OsuHitObject> hitObjects, List<double> noteDensities, List<double> fingerStrains, double clockRate, bool hidden = false)
         {
             if (hitObjects.Count == 0)
                 return (0, string.Empty);
@@ -48,11 +48,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                     var visibleObjects = hitObjects.GetRange(i, noteDensity);
                     var nextObject = hitObjects[i + 1];
 
-                    rhythmReadingComplexity = calculateRhythmReading(visibleObjects, hitObjects[i - 1], currentObject, nextObject, fingerStrains[i], clockRate);
-                    aimReadingComplexity = calculateAimReading(visibleObjects, currentObject, nextObject);
+                    rhythmReadingComplexity = calculateRhythmReading(visibleObjects, hitObjects[i - 1], currentObject, nextObject, fingerStrains[i], clockRate, hidden);
+                    aimReadingComplexity = calculateAimReading(visibleObjects, currentObject, nextObject, hidden);
                 }
 
-                var strain = rhythmReadingComplexity + aimReadingComplexity * multiplier;
+                var strain = (rhythmReadingComplexity + aimReadingComplexity) * multiplier;
                 strainHistory.Add(strain);
 
                 sw.WriteLine($"{hitObjects[i].StartTime / 1000.0} {strain} {strain}");
@@ -66,14 +66,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             double diff = 0;
 
-            const double k = 0.95;
+            const double k = 0.99;
 
             for (int i = 0; i < hitObjects.Count; i++)
             {
                 diff += strainHistoryArray[i] * Math.Pow(k, i);
             }
 
-            return (diff * (1 - k) * 1.1, sw.ToString());
+            return (diff * (1 - k), sw.ToString());
         }
 
         private static double calculateRhythmReading(List<OsuHitObject> visibleObjects,
@@ -81,7 +81,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                                                      OsuHitObject currentObject,
                                                      OsuHitObject nextObject,
                                                      double currentFingerStrain,
-                                                     double clockRate)
+                                                     double clockRate,
+                                                     bool hidden)
         {
             var overlapness = 0.0;
             var prevPosition = Vector<double>.Build.Dense(new[] { prevObject.StackedPosition.X, (double)prevObject.StackedPosition.Y });
@@ -103,24 +104,25 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 overlapness = Math.Max(0, overlapness);
             }
 
-            var spacingChange = 1.0;
+            overlapness /= visibleObjects.Count / 2.0;
 
+            // calculate if rhythm change correlates to spacing change
             var tPrevCurr = (currentObject.StartTime - prevObject.StartTime) / clockRate;
             var tCurrNext = (nextObject.StartTime - currentObject.StartTime) / clockRate;
-            var tRatio = tCurrNext / tPrevCurr + 1e-10;
+            var tRatio = tCurrNext / (tPrevCurr + 1e-10);
 
             var prevCurrDistance = ((currentPosition - prevPosition) / (2 * currentObject.Radius)).L2Norm();
             var currNextDistance = ((nextPosition - currentPosition) / (2 * currentObject.Radius)).L2Norm();
-            var distanceRatio = currNextDistance / prevCurrDistance + 1e-10;
+            var distanceRatio = currNextDistance / (prevCurrDistance + 1e-10);
 
             var changeRatio = distanceRatio / tRatio;
-            spacingChange = 1.0 + SpecialFunctions.Logistic((0.7 - changeRatio) / 0.05) * 0.2 +
-                            SpecialFunctions.Logistic((changeRatio - 1.3) / 0.05) * 0.2;
+            var spacingChange = SpecialFunctions.Logistic((0.95 - changeRatio) / 0.005) +
+                                SpecialFunctions.Logistic((changeRatio - 1.05) / 0.005);
 
-            return Math.Pow(0.3, 2 / currentFingerStrain) * overlapness * spacingChange;
+            return Math.Pow(0.3, 2 / currentFingerStrain) * overlapness * spacingChange * (hidden ? 1.2 : 1.0);
         }
 
-        private static double calculateAimReading(List<OsuHitObject> visibleObjects, OsuHitObject currentObject, OsuHitObject nextObject)
+        private static double calculateAimReading(List<OsuHitObject> visibleObjects, OsuHitObject currentObject, OsuHitObject nextObject, bool hidden)
         {
             var intersections = 0.0;
 
@@ -133,17 +135,19 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             foreach (var visibleObject in visibleObjects)
             {
                 var visibleObjectPosition = Vector<double>.Build.Dense(new[] { visibleObject.StackedPosition.X, (double)visibleObject.StackedPosition.Y });
-                var visibleVector = currentPosition - visibleObjectPosition;
+                var visibleToCurrentVector = currentPosition - visibleObjectPosition;
                 var visibleToNextDistance = ((nextPosition - visibleObjectPosition) / (2 * currentObject.Radius)).L2Norm();
 
                 // scale the bonus by distance of movement and distance between intersected object and movement end object
-                var intersectionBonus = checkMovementIntersect(nextVector, nextObject.Radius * 2, visibleVector) *
+                var intersectionBonus = checkMovementIntersect(nextVector, nextObject.Radius * 2, visibleToCurrentVector) *
                                         SpecialFunctions.Logistic((movementDistance - 3) / 0.7) *
                                         SpecialFunctions.Logistic((3 - visibleToNextDistance) / 0.7);
 
                 // this is temp until sliders get proper reading impl
                 if (visibleObject is Slider)
                     intersectionBonus *= 2.0;
+
+                // TODO: approach circle intersections
 
                 intersections += intersectionBonus;
             }

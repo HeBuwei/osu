@@ -319,6 +319,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double readingDiff = Attributes.ReadingDiff;
 
             if (mods.Any(m => m is OsuModFlashlight))
+                readingDiff *= 1.05;
+
+            if (mods.Any(m => m is OsuModHidden))
                 readingDiff *= 1.02;
 
             return readingDiffToPP(readingDiff);
@@ -342,7 +345,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
 
         private double fingerControlDiffToPP(double fingerControlDiff) => Math.Pow(fingerControlDiff, skill_to_pp_exponent);
 
-        private double readingDiffToPP(double readingDiff) => Math.Pow(readingDiff, skill_to_pp_exponent) * 50.0;
+        private double readingDiffToPP(double readingDiff) => Math.Pow(readingDiff, skill_to_pp_exponent) * 40.0;
 
         private double totalHits => countGreat + countGood + countMeh + countMiss;
         private double totalSuccessfulHits => countGreat + countGood + countMeh;
