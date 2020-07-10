@@ -9,7 +9,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 {
     public static class Reading
     {
-        private const double rhythm_multiplier = 5.0;
+        private const double rhythm_multiplier = 10.0;
         private const double aim_multiplier = 30.0;
 
         /// <summary>
@@ -75,7 +75,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 diff += strainHistoryArray[i] * Math.Pow(k, i);
             }
 
-            return (diff * (1 - k), sw.ToString());
+            return (diff * (1 - k) * 1.1, sw.ToString());
         }
 
         private static double calculateRhythmReading(List<OsuHitObject> visibleObjects,
@@ -99,8 +99,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             overlapness += SpecialFunctions.Logistic((0.5 - prevCurrDistance) / 0.1) - 0.2;
 
             // calculate how much visible objects overlap current object
-            foreach (var visibleObject in visibleObjects)
+            for (int i = 1; i < visibleObjects.Count; i++)
             {
+                var visibleObject = visibleObjects[i];
                 var visibleObjectPosition = Vector<double>.Build.Dense(new[] { visibleObject.StackedPosition.X, (double)visibleObject.StackedPosition.Y });
                 var visibleDistance = ((currentPosition - visibleObjectPosition) / (2 * currentObject.Radius)).L2Norm();
 
@@ -124,7 +125,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             var changeRatio = distanceRatio * tRatio;
             var spacingChange = Math.Min(1.05, Math.Pow(changeRatio - 1, 2) * 1000) * Math.Min(1.00, Math.Pow(distanceRatio - 1, 2) * 1000);
 
-            return Math.Pow(0.3, 2 / currentFingerStrain) * overlapness * spacingChange * (hidden ? 1.2 : 1.0);
+            return Math.Pow(0.3, 2 / (currentFingerStrain + 1e-10)) * overlapness * spacingChange * (hidden ? 1.2 : 1.0);
         }
 
         private static double calculateAimReading(List<OsuHitObject> visibleObjects, OsuHitObject currentObject, OsuHitObject nextObject, bool hidden)
@@ -136,9 +137,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             var nextVector = currentPosition - nextPosition;
             var movementDistance = ((nextPosition - currentPosition) / (2 * currentObject.Radius)).L2Norm();
 
-            // calculate amount of circles intersecting the movement
-            foreach (var visibleObject in visibleObjects)
+            // calculate amount of circles intersecting the movement excluding current and next circles
+            for (int i = 2; i < visibleObjects.Count; i++)
             {
+                var visibleObject = visibleObjects[i];
                 var visibleObjectPosition = Vector<double>.Build.Dense(new[] { visibleObject.StackedPosition.X, (double)visibleObject.StackedPosition.Y });
                 var visibleToCurrentVector = currentPosition - visibleObjectPosition;
                 var visibleToNextDistance = ((nextPosition - visibleObjectPosition) / (2 * currentObject.Radius)).L2Norm();
