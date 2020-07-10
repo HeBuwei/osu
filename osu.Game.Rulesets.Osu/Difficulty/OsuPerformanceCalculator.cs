@@ -318,6 +318,13 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         {
             double readingDiff = Attributes.ReadingDiff;
 
+            // penalize misses
+            readingDiff *= Math.Pow(0.96, Math.Max(effectiveMissCount - miss_count_leniency, 0));
+
+            // Scale tap value down with accuracy
+            double accFactor = 0.5 + 0.5 * (SpecialFunctions.Logistic((accuracy - 0.75) / 0.1) + SpecialFunctions.Logistic(-3.5));
+            readingDiff *= accFactor;
+
             if (mods.Any(m => m is OsuModFlashlight))
                 readingDiff *= 1.05;
 

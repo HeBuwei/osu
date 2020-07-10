@@ -9,7 +9,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 {
     public static class Reading
     {
-        private const double multiplier = 10.0;
+        private const double rhythm_multiplier = 5.0;
+        private const double aim_multiplier = 30.0;
 
         /// <summary>
         /// Calculates reading difficulty of the map
@@ -48,14 +49,15 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                     var visibleObjects = hitObjects.GetRange(i, noteDensity);
                     var nextObject = hitObjects[i + 1];
 
-                    rhythmReadingComplexity = calculateRhythmReading(visibleObjects, hitObjects[i - 1], currentObject, nextObject, fingerStrains[i], clockRate, hidden);
-                    aimReadingComplexity = calculateAimReading(visibleObjects, currentObject, nextObject, hidden);
+                    rhythmReadingComplexity = calculateRhythmReading(visibleObjects, hitObjects[i - 1], currentObject, nextObject, fingerStrains[i], clockRate, hidden) * rhythm_multiplier;
+                    aimReadingComplexity = calculateAimReading(visibleObjects, currentObject, nextObject, hidden) * aim_multiplier;
                 }
 
-                var strain = (rhythmReadingComplexity + aimReadingComplexity) * multiplier;
+                var strain = rhythmReadingComplexity + aimReadingComplexity;
+
                 strainHistory.Add(strain);
 
-                sw.WriteLine($"{hitObjects[i].StartTime / 1000.0} {strain} {strain}");
+                sw.WriteLine($"{currentObject.StartTime / 1000.0} {strain}");
             }
 
             // aggregate strain values to compute difficulty
@@ -86,8 +88,15 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         {
             var overlapness = 0.0;
             var prevPosition = Vector<double>.Build.Dense(new[] { prevObject.StackedPosition.X, (double)prevObject.StackedPosition.Y });
+
             var currentPosition = Vector<double>.Build.Dense(new[] { currentObject.StackedPosition.X, (double)currentObject.StackedPosition.Y });
+            var prevCurrDistance = ((currentPosition - prevPosition) / (2 * currentObject.Radius)).L2Norm();
+
             var nextPosition = Vector<double>.Build.Dense(new[] { nextObject.StackedPosition.X, (double)nextObject.StackedPosition.Y });
+            var currNextDistance = ((nextPosition - currentPosition) / (2 * currentObject.Radius)).L2Norm();
+
+            // buff overlapness if previous object was also overlapping
+            overlapness += SpecialFunctions.Logistic((0.5 - prevCurrDistance) / 0.1) - 0.2;
 
             // calculate how much visible objects overlap current object
             foreach (var visibleObject in visibleObjects)
@@ -103,21 +112,17 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
                 overlapness = Math.Max(0, overlapness);
             }
-
             overlapness /= visibleObjects.Count / 2.0;
-
+            
             // calculate if rhythm change correlates to spacing change
             var tPrevCurr = (currentObject.StartTime - prevObject.StartTime) / clockRate;
             var tCurrNext = (nextObject.StartTime - currentObject.StartTime) / clockRate;
             var tRatio = tCurrNext / (tPrevCurr + 1e-10);
 
-            var prevCurrDistance = ((currentPosition - prevPosition) / (2 * currentObject.Radius)).L2Norm();
-            var currNextDistance = ((nextPosition - currentPosition) / (2 * currentObject.Radius)).L2Norm();
             var distanceRatio = currNextDistance / (prevCurrDistance + 1e-10);
 
-            var changeRatio = distanceRatio / tRatio;
-            var spacingChange = SpecialFunctions.Logistic((0.95 - changeRatio) / 0.005) +
-                                SpecialFunctions.Logistic((changeRatio - 1.05) / 0.005);
+            var changeRatio = distanceRatio * tRatio;
+            var spacingChange = Math.Min(1.05, Math.Pow(changeRatio - 1, 2) * 1000) * Math.Min(1.00, Math.Pow(distanceRatio - 1, 2) * 1000);
 
             return Math.Pow(0.3, 2 / currentFingerStrain) * overlapness * spacingChange * (hidden ? 1.2 : 1.0);
         }
@@ -178,16 +183,16 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 if (t1 >= 0 && t1 <= 1)
                 {
                     // t1 is the intersection, and it's closer than t2
-                    return 1.0;
+                    return t1;
                 }
 
                 // here t1 didn't intersect so we are either started
                 // inside the sphere or completely past it
                 if (t2 >= 0 && t2 <= 1)
                 {
-                    return 0.5;
+                    return t2 / 2.0;
                 }
-
+                
                 return 0.0;
             }
         }
