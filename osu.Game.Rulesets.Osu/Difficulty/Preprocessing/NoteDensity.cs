@@ -40,6 +40,33 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
             return noteDensities;
         }
 
+        public static List<double> CalculateVisibleCircles(List<OsuHitObject> hitObjects, double preempt)
+        {
+            List<double> noteDensities = new List<double>();
+
+            Queue<OsuHitObject> window = new Queue<OsuHitObject>();
+
+            int next = 0;
+
+            for (int i = 0; i < hitObjects.Count; i++)
+            {
+                while (next < hitObjects.Count && hitObjects[next].StartTime < hitObjects[i].StartTime + preempt)
+                {
+                    window.Enqueue(hitObjects[next]);
+                    next++;
+                }
+
+                while (window.Peek().StartTime < hitObjects[i].StartTime - preempt)
+                {
+                    window.Dequeue();
+                }
+
+                noteDensities.Add(window.Count);
+            }
+
+            return noteDensities;
+        }
+
 
         private static double calculateNoteDensity(double time, double preempt, Queue<OsuHitObject> window)
         {

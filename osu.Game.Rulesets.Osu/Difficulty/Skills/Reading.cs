@@ -9,8 +9,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 {
     public static class Reading
     {
-        private const double rhythm_multiplier = 10.0;
-        private const double aim_multiplier = 30.0;
+        private const double rhythm_multiplier = 15.0;
+        private const double aim_multiplier = 32.0;
 
         /// <summary>
         /// Calculates reading difficulty of the map
@@ -53,7 +53,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                     aimReadingComplexity = calculateAimReading(visibleObjects, currentObject, nextObject, hidden) * aim_multiplier;
                 }
 
-                var strain = rhythmReadingComplexity + aimReadingComplexity;
+                var strain = (rhythmReadingComplexity + aimReadingComplexity) * 8.0;
 
                 strainHistory.Add(strain);
 

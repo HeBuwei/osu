@@ -45,7 +45,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty
 
             double preemptNoClockRate = BeatmapDifficulty.DifficultyRange(beatmap.BeatmapInfo.BaseDifficulty.ApproachRate, 1800, 1200, 450);
             var noteDensities = NoteDensity.CalculateNoteDensities(hitObjects, preemptNoClockRate);
-
+            var noteDensitiesVisible = NoteDensity.CalculateVisibleCircles(hitObjects, preemptNoClockRate);
+            
             HitWindows hitWindows = new OsuHitWindows();
             hitWindows.SetDifficulty(beatmap.BeatmapInfo.BaseDifficulty.OverallDifficulty);
 
@@ -61,7 +62,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             (double fingerControlDiff, string fingerGraph, List<double> fingerStrainHistory, int hardFingerStrainAmount) = new FingerControl().CalculateFingerControlDiff(hitObjects, clockRate, strainHistory, hitWindowGreat);
 
             // Reading
-            var (readingDiff, readingGraph) = Reading.CalculateReadingDiff(hitObjects, noteDensities, fingerStrainHistory, clockRate);
+            var (readingDiff, readingGraph) = Reading.CalculateReadingDiff(hitObjects, noteDensitiesVisible, fingerStrainHistory, clockRate, mods.Any(x=> x.GetType() == typeof(OsuModHidden)));
 
             // Aim
             (var aimDiff, var aimHiddenFactor, var comboTps, var missTps, var missCounts,
