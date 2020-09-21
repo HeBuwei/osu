@@ -4,8 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.IO;
-
 using osu.Game.Beatmaps;
 using osu.Game.Rulesets.Difficulty;
 using osu.Game.Rulesets.Difficulty.Preprocessing;
@@ -53,16 +51,13 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double preempt = (int)BeatmapDifficulty.DifficultyRange(beatmap.BeatmapInfo.BaseDifficulty.ApproachRate, 1800, 1200, 450) / clockRate;
 
             // Tap
-            (var tapDiff, var streamNoteCount, var mashTapDiff, var strainHistory, string graphTextTap) =
-                Tap.CalculateTapAttributes(hitObjects, clockRate);
+            var tapAttributes = Tap.CalculateTapAttributes(hitObjects, clockRate);
 
             // Finger Control
             (double fingerControlDiff, string fingerGraph, List<double> fingerStrainHistory, int hardFingerStrainAmount) = new FingerControl().CalculateFingerControlDiff(hitObjects, clockRate, strainHistory, hitWindowGreat);
 
             // Aim
-            (var aimDiff, var aimHiddenFactor, var comboTps, var missTps, var missCounts,
-             var cheeseNoteCount, var cheeseLevels, var cheeseFactors, var graphText) =
-                Aim.CalculateAimAttributes(hitObjects, clockRate, strainHistory, noteDensities);
+            var aimAttributes = Aim.CalculateAimAttributes(hitObjects, clockRate, tapAttributes.StrainHistory, noteDensities);
 
             // graph for aim
             string graphFilePath = Path.Combine("cache", $"graph_{beatmap.BeatmapInfo.OnlineBeatmapID}_{string.Join(string.Empty, mods.Select(x => x.Acronym))}.txt");
@@ -75,8 +70,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             // graph for finger
             string graphFingerFilePath = Path.Combine("cache", $"graph_{beatmap.BeatmapInfo.OnlineBeatmapID}_{string.Join(string.Empty, mods.Select(x => x.Acronym))}_finger.txt");
             File.WriteAllText(graphFingerFilePath, fingerGraph);
-            double tapSr = tap_multiplier * Math.Pow(tapDiff, sr_exponent);
-            double aimSr = aim_multiplier * Math.Pow(aimDiff, sr_exponent);
+            double tapSr = tap_multiplier * Math.Pow(tapAttributes.TapDifficulty, sr_exponent);
+            double aimSr = aim_multiplier * Math.Pow(aimAttributes.FcProbabilityThroughput, sr_exponent);
             double fingerControlSr = finger_control_multiplier * Math.Pow(fingerControlDiff, sr_exponent);
 
             var valuesSorted = new List<double> { aimSr, tapSr, fingerControlSr };
@@ -102,30 +97,29 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 Length = mapLength,
 
                 TapSr = tapSr,
-                TapDiff = tapDiff,
-                StreamNoteCount = streamNoteCount,
-                MashTapDiff = mashTapDiff,
+                TapDiff = tapAttributes.TapDifficulty,
+                StreamNoteCount = tapAttributes.StreamNoteCount,
+                MashTapDiff = tapAttributes.MashedTapDifficulty,
 
                 FingerControlSr = fingerControlSr,
                 FingerControlDiff = fingerControlDiff,
                 FingerControlHardStrains = hardFingerStrainAmount,
 
                 AimSr = aimSr,
-                AimDiff = aimDiff,
-                AimHiddenFactor = aimHiddenFactor,
-                ComboTps = comboTps,
-                MissTps = missTps,
-                MissCounts = missCounts,
-                CheeseNoteCount = cheeseNoteCount,
-                CheeseLevels = cheeseLevels,
-                CheeseFactors = cheeseFactors,
+                AimDiff = aimAttributes.FcProbabilityThroughput,
+                AimHiddenFactor = aimAttributes.HiddenFactor,
+                ComboTps = aimAttributes.ComboThroughputs,
+                MissTps = aimAttributes.MissThroughputs,
+                MissCounts = aimAttributes.MissCounts,
+                CheeseNoteCount = aimAttributes.CheeseNoteCount,
+                CheeseLevels = aimAttributes.CheeseLevels,
+                CheeseFactors = aimAttributes.CheeseFactors,
 
                 ApproachRate = preempt > 1200 ? (1800 - preempt) / 120 : (1200 - preempt) / 150 + 5,
                 OverallDifficulty = (80 - hitWindowGreat) / 6,
                 MaxCombo = maxCombo
             };
         }
-
 
         protected override Skill[] CreateSkills(IBeatmap beatmap)
         {
