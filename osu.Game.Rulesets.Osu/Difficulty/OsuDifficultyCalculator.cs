@@ -16,6 +16,7 @@ using osu.Game.Rulesets.Osu.Objects;
 using osu.Game.Rulesets.Osu.Difficulty.MathUtil;
 using osu.Game.Rulesets.Osu.Scoring;
 using osu.Game.Rulesets.Scoring;
+using System.IO;
 
 namespace osu.Game.Rulesets.Osu.Difficulty
 {
@@ -54,25 +55,25 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             var tapAttributes = Tap.CalculateTapAttributes(hitObjects, clockRate);
 
             // Finger Control
-            (double fingerControlDiff, string fingerGraph, List<double> fingerStrainHistory, int hardFingerStrainAmount) = new FingerControl().CalculateFingerControlDiff(hitObjects, clockRate, strainHistory, hitWindowGreat);
+            var fingerAttributes = new FingerControl().CalculateFingerControlDiff(hitObjects, clockRate, tapAttributes.StrainHistory, hitWindowGreat);
 
             // Aim
             var aimAttributes = Aim.CalculateAimAttributes(hitObjects, clockRate, tapAttributes.StrainHistory, noteDensities);
 
             // graph for aim
             string graphFilePath = Path.Combine("cache", $"graph_{beatmap.BeatmapInfo.OnlineBeatmapID}_{string.Join(string.Empty, mods.Select(x => x.Acronym))}.txt");
-            File.WriteAllText(graphFilePath, graphText);
+            File.WriteAllText(graphFilePath, aimAttributes.Graph);
 
             // graph for tap
             string graphFilePathTap = Path.Combine("cache", $"graph_{beatmap.BeatmapInfo.OnlineBeatmapID}_{string.Join(string.Empty, mods.Select(x => x.Acronym))}_tap.txt");
-            File.WriteAllText(graphFilePathTap, graphTextTap);
+            File.WriteAllText(graphFilePathTap, tapAttributes.Graph);
 
             // graph for finger
             string graphFingerFilePath = Path.Combine("cache", $"graph_{beatmap.BeatmapInfo.OnlineBeatmapID}_{string.Join(string.Empty, mods.Select(x => x.Acronym))}_finger.txt");
-            File.WriteAllText(graphFingerFilePath, fingerGraph);
+            File.WriteAllText(graphFingerFilePath, fingerAttributes.Graph);
             double tapSr = tap_multiplier * Math.Pow(tapAttributes.TapDifficulty, sr_exponent);
             double aimSr = aim_multiplier * Math.Pow(aimAttributes.FcProbabilityThroughput, sr_exponent);
-            double fingerControlSr = finger_control_multiplier * Math.Pow(fingerControlDiff, sr_exponent);
+            double fingerControlSr = finger_control_multiplier * Math.Pow(fingerAttributes.FingerDifficulty, sr_exponent);
 
             var valuesSorted = new List<double> { aimSr, tapSr, fingerControlSr };
             valuesSorted.Sort();
@@ -102,8 +103,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 MashTapDiff = tapAttributes.MashedTapDifficulty,
 
                 FingerControlSr = fingerControlSr,
-                FingerControlDiff = fingerControlDiff,
-                FingerControlHardStrains = hardFingerStrainAmount,
+                FingerControlDiff = fingerAttributes.FingerDifficulty,
+                FingerControlHardStrains = fingerAttributes.HardStrainAmount,
 
                 AimSr = aimSr,
                 AimDiff = aimAttributes.FcProbabilityThroughput,

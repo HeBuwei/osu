@@ -33,7 +33,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         /// </summary>
         public static TapAttributes CalculateTapAttributes(List<OsuHitObject> hitObjects, double clockRate)
         {
-            var (strainHistory, tapDiff, var graphText) = calculateTapStrain(hitObjects, 0, clockRate);
+            var (strainHistory, tapDiff, graphText) = calculateTapStrain(hitObjects, 0, clockRate);
             double burstStrain = strainHistory.Max(v => v[0]);
 
             var streamnessMask = CalculateStreamnessMask(hitObjects, burstStrain, clockRate);
@@ -46,7 +46,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 TapDifficulty = tapDiff,
                 StreamNoteCount = streamNoteCount,
                 MashedTapDifficulty = mashTapDiff,
-                StrainHistory = strainHistory
+                StrainHistory = strainHistory,
+                Graph = graphText
             };
         }
 

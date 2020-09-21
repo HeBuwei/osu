@@ -13,5 +13,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         public double CheeseNoteCount;
         public double[] CheeseLevels;
         public double[] CheeseFactors;
+        public string Graph;
     }
 }

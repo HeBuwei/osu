@@ -10,6 +10,7 @@ using MathNet.Numerics.RootFinding;
 using osu.Game.Rulesets.Osu.Difficulty.Preprocessing;
 using osu.Game.Rulesets.Osu.Objects;
 using osu.Game.Rulesets.Osu.Difficulty.MathUtil;
+using System.IO;
 
 namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 {
@@ -85,6 +86,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             double hiddenFactor = fcProbTpHidden / fcProbTp;
 
+            string graphText = generateGraphText(movements, fcProbTp);
+
             double[] comboTps = calculateComboTps(mapHitProbs, comboSectionAmount);
             double fcTimeTp = comboTps.Last();
             var (missTps, missCounts) = calculateMissTpsMissCounts(movements, fcTimeTp, missSectionAmount);
@@ -100,8 +103,28 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 MissCounts = missCounts,
                 CheeseNoteCount = cheeseNoteCount,
                 CheeseLevels = cheeseLevels,
-                CheeseFactors = cheeseFactors
+                CheeseFactors = cheeseFactors,
+                Graph = graphText
             };
+        }
+
+        private static string generateGraphText(List<OsuMovement> movements, double tp)
+        {
+            var sw = new StringWriter();
+
+            foreach (var movement in movements)
+            {
+                double time = movement.Time;
+                double ipRaw = movement.Ip12;
+                double ipCorrected = FittsLaw.CalculateIp(movement.D, movement.Mt * (1 + default_cheese_level * movement.CheesableRatio));
+                double missProb = 1 - HitProbabilities.CalculateCheeseHitProb(movement, tp, default_cheese_level);
+
+                sw.WriteLine($"{time} {ipRaw} {ipCorrected} {missProb}");
+            }
+
+            string graphText = sw.ToString();
+            sw.Dispose();
+            return graphText;
         }
 
         /// <summary>
