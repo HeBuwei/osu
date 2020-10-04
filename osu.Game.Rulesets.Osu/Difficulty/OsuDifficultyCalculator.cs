@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.IO;
 using osu.Game.Beatmaps;
 using osu.Game.Rulesets.Difficulty;
 using osu.Game.Rulesets.Difficulty.Preprocessing;
@@ -45,22 +44,16 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             var noteDensities = NoteDensity.CalculateNoteDensities(hitObjects, preemptNoClockRate);
 
             // Tap
-            var (tapDiff, streamNoteCount, mashTapDiff, strainHistory) =
-                Tap.CalculateTapAttributes(hitObjects, clockRate);
+            var tapAttributes = Tap.CalculateTapAttributes(hitObjects, clockRate);
 
             // Finger Control
             double fingerControlDiff = FingerControl.CalculateFingerControlDiff(hitObjects, clockRate);
 
             // Aim
-            var (aimDiff, aimHiddenFactor, comboTps, missTps, missCounts, cheeseNoteCount, cheeseLevels, cheeseFactors, graphText) =
-                Aim.CalculateAimAttributes(hitObjects, clockRate, strainHistory, noteDensities);
+            var aimAttributes = Aim.CalculateAimAttributes(hitObjects, clockRate, tapAttributes.StrainHistory, noteDensities);
 
-            // graph for aim
-            string graphFilePath = Path.Combine("cache", $"graph_{beatmap.BeatmapInfo.OnlineBeatmapID}_{string.Join(string.Empty, mods.Select(x => x.Acronym))}.txt");
-            File.WriteAllText(graphFilePath, graphText);
-
-            double tapSr = tap_multiplier * Math.Pow(tapDiff, sr_exponent);
-            double aimSr = aim_multiplier * Math.Pow(aimDiff, sr_exponent);
+            double tapSr = tap_multiplier * Math.Pow(tapAttributes.TapDifficulty, sr_exponent);
+            double aimSr = aim_multiplier * Math.Pow(aimAttributes.FcProbabilityThroughput, sr_exponent);
             double fingerControlSr = finger_control_multiplier * Math.Pow(fingerControlDiff, sr_exponent);
             double sr = Mean.PowerMean(new[] { tapSr, aimSr, fingerControlSr }, 7) * 1.131;
 
@@ -82,22 +75,22 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 Length = mapLength,
 
                 TapSr = tapSr,
-                TapDiff = tapDiff,
-                StreamNoteCount = streamNoteCount,
-                MashTapDiff = mashTapDiff,
+                TapDiff = tapAttributes.TapDifficulty,
+                StreamNoteCount = tapAttributes.StreamNoteCount,
+                MashTapDiff = tapAttributes.MashedTapDifficulty,
 
                 FingerControlSr = fingerControlSr,
                 FingerControlDiff = fingerControlDiff,
 
                 AimSr = aimSr,
-                AimDiff = aimDiff,
-                AimHiddenFactor = aimHiddenFactor,
-                ComboTps = comboTps,
-                MissTps = missTps,
-                MissCounts = missCounts,
-                CheeseNoteCount = cheeseNoteCount,
-                CheeseLevels = cheeseLevels,
-                CheeseFactors = cheeseFactors,
+                AimDiff = aimAttributes.FcProbabilityThroughput,
+                AimHiddenFactor = aimAttributes.HiddenFactor,
+                ComboTps = aimAttributes.ComboThroughputs,
+                MissTps = aimAttributes.MissThroughputs,
+                MissCounts = aimAttributes.MissCounts,
+                CheeseNoteCount = aimAttributes.CheeseNoteCount,
+                CheeseLevels = aimAttributes.CheeseLevels,
+                CheeseFactors = aimAttributes.CheeseFactors,
 
                 ApproachRate = preempt > 1200 ? (1800 - preempt) / 120 : (1200 - preempt) / 150 + 5,
                 OverallDifficulty = (80 - hitWindowGreat) / 6,

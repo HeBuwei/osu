@@ -30,8 +30,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         /// <summary>
         /// Calculates attributes related to tapping difficulty.
         /// </summary>
-        public static (double, double, double, List<Vector<double>>) CalculateTapAttributes
-            (List<OsuHitObject> hitObjects, double clockRate)
+        public static TapAttributes CalculateTapAttributes(List<OsuHitObject> hitObjects, double clockRate)
         {
             var (strainHistory, tapDiff) = calculateTapStrain(hitObjects, 0, clockRate);
             double burstStrain = strainHistory.Max(v => v[0]);
@@ -41,7 +40,13 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             var (_, mashTapDiff) = calculateTapStrain(hitObjects, 1, clockRate);
 
-            return (tapDiff, streamNoteCount, mashTapDiff, strainHistory);
+            return new TapAttributes
+            {
+                TapDifficulty = tapDiff,
+                StreamNoteCount = streamNoteCount,
+                MashedTapDifficulty = mashTapDiff,
+                StrainHistory = strainHistory
+            };
         }
 
         /// <summary>
@@ -73,7 +78,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
                     strainHistory.Add(currStrain.PointwisePower(1.1 / 3) * 1.5);
 
-                    double distance = (hitObjects[i].Position - hitObjects[i - 1].Position).Length / (2 * hitObjects[i].Radius);
+                    double distance = (hitObjects[i].StackedPosition - hitObjects[i - 1].StackedPosition).Length / (2 * hitObjects[i].Radius);
                     double spacedBuff = calculateSpacedness(distance) * spaced_buff_factor;
 
                     double deltaTime = Math.Max((currTime - prevPrevTime) / clockRate, 0.01);
