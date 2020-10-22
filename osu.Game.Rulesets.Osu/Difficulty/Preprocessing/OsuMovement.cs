@@ -411,15 +411,15 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
 
             var streamJumpBuff = 0.0;
             // Correction #15 - Buff sudden single distance increase in 4-object flowy patterns (jumps in streams)
-            if (obj1InTheMiddle && obj2InTheMiddle)
+            if (objPrevTemporallyInTheMiddle && objCurrTemporallyInTheMiddle)
             {
-                var streamSpacingMean = Mean.PowerMean(d01, d23, 1.5);
+                var streamSpacingMean = Mean.PowerMean(dNeg2Prev, dCurrNext, 1.5);
 
-                if (d12 > streamSpacingMean)
+                if (dPrevCurr > streamSpacingMean)
                 {
-                    var distanceDifference = d12 - streamSpacingMean;
+                    var distanceDifference = dPrevCurr - streamSpacingMean;
                     streamJumpBuff = SpecialFunctions.Logistic((distanceDifference - 0.55) / 0.08) *
-                                     (1.0 - Math.Exp(-Mean.PowerMean(flowiness012, flowiness123, 8) * 3.5)) *
+                                     (1.0 - Math.Exp(-Mean.PowerMean(flowinessNeg2PrevCurr, flowinessPrevCurrNext, 8) * 3.5)) *
                                      SpecialFunctions.Logistic((streamSpacingMean - 0.5) / 0.07) * 0.42;
                 }
             }
