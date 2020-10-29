@@ -418,9 +418,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
                 if (dPrevCurr > streamSpacingMean)
                 {
                     var distanceDifference = dPrevCurr - streamSpacingMean;
-                    streamJumpBuff = SpecialFunctions.Logistic((distanceDifference - 0.55) / 0.08) *
-                                     (1.0 - Math.Exp(-Mean.PowerMean(flowinessNeg2PrevCurr, flowinessPrevCurrNext, 8) * 3.5)) *
-                                     SpecialFunctions.Logistic((streamSpacingMean - 0.5) / 0.07) * 0.42;
+
+                    streamJumpBuff = SpecialFunctions.Logistic((distanceDifference - 1.4 + SpecialFunctions.Logistic((streamSpacingMean - 0.6) / 0.1) * 0.85) / 0.08) *
+                                     SpecialFunctions.Logistic((Mean.PowerMean(flowinessNeg2PrevCurr, flowinessPrevCurrNext, 8) - 0.5) / 0.07) * 0.55;
                 }
             }
 
