@@ -418,9 +418,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
                 if (dPrevCurr > streamSpacingMean)
                 {
                     var distanceDifference = dPrevCurr - streamSpacingMean;
+                    var streamSpacingDebuff = SpecialFunctions.Logistic((streamSpacingMean - 0.6) / 0.1) * 0.55; // lower stream spacing mean requires bigger jump
+                    var flowinessNeg4ToNext = Mean.PowerMean(flowinessNeg2PrevCurr, flowinessPrevCurrNext, 8);
 
-                    streamJumpBuff = SpecialFunctions.Logistic((distanceDifference - 1.4 + SpecialFunctions.Logistic((streamSpacingMean - 0.6) / 0.1) * 0.85) / 0.08) *
-                                     SpecialFunctions.Logistic((Mean.PowerMean(flowinessNeg2PrevCurr, flowinessPrevCurrNext, 8) - 0.5) / 0.07) * 0.55;
+                    streamJumpBuff = SpecialFunctions.Logistic((distanceDifference - 1.1 + streamSpacingDebuff) / 0.08) *
+                                     SpecialFunctions.Logistic((flowinessNeg4ToNext - 0.5) / 0.07) *
+                                     SpecialFunctions.Logistic((effectiveBpm + 110.0) / 10.0) * 0.45;
                 }
             }
 
