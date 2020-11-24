@@ -91,7 +91,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                     MissCounts = Array.Empty<double>(),
                     CheeseNoteCount = 0.0,
                     CheeseLevels = Array.Empty<double>(),
-                    CheeseFactors = Array.Empty<double>()
+                    CheeseFactors = Array.Empty<double>(),
+                    Graph = ""
                 };
             }
 
@@ -130,8 +131,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             foreach (var movement in movements)
             {
                 double time = movement.Time;
-                double ipRaw = movement.Ip12;
-                double ipCorrected = FittsLaw.CalculateIp(movement.D, movement.Mt * (1 + default_cheese_level * movement.CheesableRatio));
+                double ipRaw = movement.IndexOfPerformance;
+                double ipCorrected = FittsLaw.CalculateIp(movement.Distance, movement.MovementTime * (1 + default_cheese_level * movement.CheesableRatio));
                 double missProb = 1 - HitProbabilities.CalculateCheeseHitProb(movement, tp, default_cheese_level);
 
                 sw.WriteLine($"{time} {ipRaw} {ipCorrected} {missProb}");

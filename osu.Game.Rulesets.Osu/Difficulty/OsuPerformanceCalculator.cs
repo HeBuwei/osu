@@ -25,7 +25,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         /// <summary>
         /// Aim, tap and acc values are combined using power mean with this as the exponent.
         /// </summary>
-        private const double total_value_exponent = 1.5;
+        private const double total_value_exponent = 1.35;
 
         /// <summary>
         /// This exponent is used to convert throughput to aim pp and tap skill to tap pp.
@@ -82,7 +82,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 return 0;
 
             // Custom multipliers for NoFail and SpunOut.
-            double multiplier = 2.16; // This is being adjusted to keep the final pp value scaled around what it used to be when changing things
+            double multiplier = 2.28; // This is being adjusted to keep the final pp value scaled around what it used to be when changing things
 
             if (mods.Any(m => m is OsuModNoFail))
                 multiplier *= 0.90;
@@ -115,16 +115,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double tapValue = computeTapValue();
             double accuracyValue = computeAccuracyValue();
 
-            var valuesSorted = new List<double> { aimValue, tapValue, accuracyValue };
-            valuesSorted.Sort();
-            valuesSorted.Reverse();
-
-            double lowestValue = valuesSorted.Last();
-            double highestValue = valuesSorted.First();
-            double differenceRatio = highestValue / lowestValue;
-
-            double totalValue =  Mean.PowerMean(new double[] { aimValue, tapValue, accuracyValue, lowestValue * Math.Max(1.0, differenceRatio / 4) }, total_value_exponent) * multiplier * 1.12;
-            //double totalValue = Mean.PowerMean(new double[] { aimValue, tapValue, accuracyValue }, total_value_exponent) * multiplier;
+            double totalValue = Mean.PowerMean(new double[] { aimValue, tapValue, accuracyValue }, total_value_exponent) * multiplier;
 
             if (categoryRatings != null)
             {
@@ -255,7 +246,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             tapValue += accBuff;
 
             // Scale tap value down with accuracy
-            double accFactor = 0.5 + 0.5 * (SpecialFunctions.Logistic((accuracy - 0.65) / 0.1) + SpecialFunctions.Logistic(-3.5));
+            double odScale = SpecialFunctions.Logistic((16.0 - greatWindow) / 1.3) * 0.02; // leanier curve for extreme OD
+            double accFactor = 0.5 + 0.5 * (Math.Pow(SpecialFunctions.Logistic((accuracy - 0.954 + odScale) / 0.025), 0.2) + SpecialFunctions.Logistic(-3.5));
+            //double accFactor = 0.5 + 0.5 * (SpecialFunctions.Logistic((accuracy - 0.65 + odScale) / 0.1) + SpecialFunctions.Logistic(-3.5));
             tapValue *= accFactor;
 
             // Penalize misses and 50s exponentially
@@ -287,10 +280,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             // preserving the value when accOnCircles is close to 1
             double accOnCirclesPositive = Math.Exp(accOnCircles - 1);
 
-            // nerf high OD based on the fcontrol sr
-            double ODnerf = 50.0 / (fingerControlDiff + 2.2) + 15.0;
+            // nerf high OD based on the fcontrol difficulty
+            double ODnerf = 100.0 / (fingerControlDiff + 5.0) + 10.0;//50.0 / (fingerControlDiff + 2.2) + 15.0;
             double deviationOnCircles = (greatWindow + ODnerf) / (Math.Sqrt(2) * SpecialFunctions.ErfInv(accOnCirclesPositive));
-            double accuracyValue = Math.Pow(deviationOnCircles, -2.2) * 97000;
+            double accuracyValue = Math.Pow(deviationOnCircles, -2.2) * 56000;
 
             // scale acc pp with misses
             accuracyValue *= Math.Pow(0.96, Math.Max(effectiveMissCount - miss_count_leniency, 0));
@@ -300,18 +293,22 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             accuracyValue *= lengthFactor;
 
             // scale finger control bonus with acc
-            if (Attributes.FingerControlHardStrains > 0)
-            {
-                var mistimes = countGood + countMeh + (countMiss / 2) + 1.0;
-                accuracyValue *= (Math.Sqrt(fingerControlDiff + 2.0) / 1.414) * (1.0 - SpecialFunctions.Logistic((0.5 - Attributes.FingerControlHardStrains / mistimes) / 0.1) * 0.3);
-            }
+            var mistimes = countGood + countMeh + (countMiss / 2) + 1.0;
+
+            //Math.Sqrt(fingerControlDiff + 0.5) / 0.5 *
+            //SpecialFunctions.Logistic(fingerControlDiff / 0.1) * 
+
+            accuracyValue *= 0.4 + SpecialFunctions.Logistic((fingerControlDiff - 0.5) / 1.0) *
+                            (1.0 - SpecialFunctions.Logistic((0.5 - Attributes.FingerControlHardStrains / mistimes) / 0.1) * 0.1) *
+                            (1.0 + SpecialFunctions.Logistic((20.0 - greatWindow) / 1.3) * 0.2) * 2.2;
+
             //(Math.Sqrt(fingerControlDiff + 1.2) / 1.0955)
             //accuracyValue *= Math.Sqrt(fingerControlDiff + 2.0) / 1.414;
             //accuracyValue *= 1.0 + SpecialFunctions.Logistic((fingerControlDiff - 3) / 0.7) * 2;
             //accuracyValue *= Math.Pow(0.123 * fingerControlDiff + 1.0, 2.0);
 
             if (mods.Any(m => m is OsuModHidden))
-                accuracyValue *= 1.08;
+                accuracyValue *= 1.02 + (0.08 * SpecialFunctions.Logistic(fingerControlDiff / 0.1));
             if (mods.Any(m => m is OsuModFlashlight))
                 accuracyValue *= 1.02;
 
@@ -331,7 +328,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
 
         private double tpToPP(double tp) => Math.Pow(tp, skill_to_pp_exponent) * 0.118;
 
-        private double tapSkillToPP(double tapSkill) => Math.Pow(tapSkill, skill_to_pp_exponent) * 0.115;
+        private double tapSkillToPP(double tapSkill) => Math.Pow(tapSkill, skill_to_pp_exponent) * 0.113;
 
         private double fingerControlDiffToPP(double fingerControlDiff) => Math.Pow(fingerControlDiff, skill_to_pp_exponent);
 

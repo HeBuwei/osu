@@ -291,7 +291,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             if (tapStrain != null)
             {
                 var mean = Mean.PowerMean(tapStrain, 2);
-                tapCorrection = 1 + SpecialFunctions.Logistic((mean - 10) / 2) * 0.25;
+                tapCorrection = 1 + SpecialFunctions.Logistic((mean - 10) / 2) * 0.20;
             }
 
             var strain = repetitionVal * multiplier * downtimeScale * appearanceScale * uniqueScale * tapCorrection / strainTime;
