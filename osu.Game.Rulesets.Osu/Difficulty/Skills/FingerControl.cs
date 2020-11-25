@@ -221,12 +221,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             double longNoteFraction = Math.Max(0.5, (double)longNoteCount / (double)refNoteHistory.Count);
 
-            var slowdownFrac = 1.0;
-            //var strainAverage = refNoteHistory.Median();
-            //if (strainAverage < strainTime)
-            //    slowdownFrac = Math.Min(strainTime / strainAverage, 1.2);
-
-            return Math.Pow(Math.Sin(Math.PI * (longNoteFraction - 1.0)), 2.0) / slowdownFrac;
+            return Math.Pow(Math.Sin(Math.PI * (longNoteFraction - 1.0)), 2.0);
         }
 
         private double strainAppearance(double strainTime, List<double> refNoteHistory)
@@ -294,8 +289,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 tapCorrection = 1 + SpecialFunctions.Logistic((mean - 10) / 2) * 0.20;
             }
 
-            var strain = repetitionVal * multiplier * downtimeScale * appearanceScale * uniqueScale * tapCorrection / strainTime;
-            return /*0.30 * Math.Exp(-1.5 * strain) + */strain;
+            return repetitionVal * multiplier * downtimeScale * appearanceScale * uniqueScale * tapCorrection / strainTime;
         }
 
         public FingerAttributes CalculateFingerControlDiff(List<OsuHitObject> hitObjects, double clockRate, List<Vector<double>> tapStrainHistory, double greatHitWindow)
