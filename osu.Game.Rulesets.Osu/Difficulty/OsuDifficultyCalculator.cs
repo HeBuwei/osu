@@ -24,7 +24,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
     {
         private const double aim_multiplier = 0.641;
         private const double tap_multiplier = 0.641;
-        private const double finger_control_multiplier = 1.6;
+        private const double finger_control_multiplier = 1.8;
 
         private const double sr_exponent = 0.83;
 

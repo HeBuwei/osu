@@ -298,9 +298,13 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             //Math.Sqrt(fingerControlDiff + 0.5) / 0.5 *
             //SpecialFunctions.Logistic(fingerControlDiff / 0.1) * 
 
-            accuracyValue *= 0.4 + SpecialFunctions.Logistic((fingerControlDiff - 0.5) / 1.0) *
+            accuracyValue *= 1.0 + Math.Pow(fingerControlDiff / 1.2, 0.4) *
                             (1.0 - SpecialFunctions.Logistic((0.5 - Attributes.FingerControlHardStrains / mistimes) / 0.1) * 0.1) *
-                            (1.0 + SpecialFunctions.Logistic((20.0 - greatWindow) / 1.3) * 0.2) * 2.2;
+                            (1.0 + SpecialFunctions.Logistic((20.0 - greatWindow) / 1.3) * 0.2);
+
+            /*accuracyValue *= 0.4 + SpecialFunctions.Logistic((fingerControlDiff - 0.5) / 1.0) *
+                            (1.0 - SpecialFunctions.Logistic((0.5 - Attributes.FingerControlHardStrains / mistimes) / 0.1) * 0.1) *
+                            (1.0 + SpecialFunctions.Logistic((20.0 - greatWindow) / 1.3) * 0.2) * 2.2;*/
 
             //(Math.Sqrt(fingerControlDiff + 1.2) / 1.0955)
             //accuracyValue *= Math.Sqrt(fingerControlDiff + 2.0) / 1.414;
