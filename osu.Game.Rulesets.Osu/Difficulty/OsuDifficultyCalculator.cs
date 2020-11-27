@@ -16,6 +16,7 @@ using osu.Game.Rulesets.Osu.Objects;
 using osu.Game.Rulesets.Osu.Difficulty.MathUtil;
 using osu.Game.Rulesets.Osu.Scoring;
 using osu.Game.Rulesets.Scoring;
+using System.IO;
 
 namespace osu.Game.Rulesets.Osu.Difficulty
 {
@@ -52,6 +53,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             // Aim
             var aimAttributes = Aim.CalculateAimAttributes(hitObjects, clockRate, tapAttributes.StrainHistory, noteDensities);
 
+            // Memory
+            var (memoryDiff, memoryGraph) = Memory.CalculateMemoryDiff(hitObjects, noteDensities, clockRate);
+
             double tapSr = tap_multiplier * Math.Pow(tapAttributes.TapDifficulty, sr_exponent);
             double aimSr = aim_multiplier * Math.Pow(aimAttributes.FcProbabilityThroughput, sr_exponent);
             double fingerControlSr = finger_control_multiplier * Math.Pow(fingerControlDiff, sr_exponent);
@@ -81,6 +85,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty
 
                 FingerControlSr = fingerControlSr,
                 FingerControlDiff = fingerControlDiff,
+
+                MemoryDiff = memoryDiff,
 
                 AimSr = aimSr,
                 AimDiff = aimAttributes.FcProbabilityThroughput,
