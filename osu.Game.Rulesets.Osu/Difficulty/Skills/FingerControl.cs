@@ -221,12 +221,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             double longNoteFraction = Math.Max(0.5, (double)longNoteCount / (double)refNoteHistory.Count);
 
-            var slowdownFrac = 1.0;
-            //var strainAverage = refNoteHistory.Median();
-            //if (strainAverage < strainTime)
-            //    slowdownFrac = Math.Min(strainTime / strainAverage, 1.2);
-
-            return Math.Pow(Math.Sin(Math.PI * (longNoteFraction - 1.0)), 2.0) / slowdownFrac;
+            return Math.Pow(Math.Sin(Math.PI * (longNoteFraction - 1.0)), 2.0);
         }
 
         private double strainAppearance(double strainTime, List<double> refNoteHistory)
@@ -243,7 +238,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             return Math.Pow(Math.Sin(Math.PI * (strainAppearanceFraction - 1.0)), 2.0);
         }
 
-        private double StrainValueOf(OsuHitObject current, double strainTime, double virtualStrainTime, double prevStrainTime, double prevVirtualStrainTime, Vector<double> tapStrain)
+        private double strainValueOf(OsuHitObject current, double strainTime, double virtualStrainTime, double prevStrainTime, double prevVirtualStrainTime, Vector<double> tapStrain)
         {
             if (current is Spinner)
                 return 0;
@@ -291,17 +286,16 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             if (tapStrain != null)
             {
                 var mean = Mean.PowerMean(tapStrain, 2);
-                tapCorrection = 1 + SpecialFunctions.Logistic((mean - 10) / 2) * 0.25;
+                tapCorrection = 1 + SpecialFunctions.Logistic((mean - 10) / 2) * 0.20;
             }
 
-            var strain = repetitionVal * multiplier * downtimeScale * appearanceScale * uniqueScale * tapCorrection / strainTime;
-            return /*0.30 * Math.Exp(-1.5 * strain) + */strain;
+            return repetitionVal * multiplier * downtimeScale * appearanceScale * uniqueScale * tapCorrection / strainTime;
         }
 
-        public (double, string, List<double>, int) CalculateFingerControlDiff(List<OsuHitObject> hitObjects, double clockRate, List<Vector<double>> tapStrainHistory, double greatHitWindow)
+        public FingerAttributes CalculateFingerControlDiff(List<OsuHitObject> hitObjects, double clockRate, List<Vector<double>> tapStrainHistory, double greatHitWindow)
         {
             if (hitObjects.Count == 0)
-                return (0, "", new List<double>(), 0);
+                return new FingerAttributes();
 
             double prevTime = hitObjects[0].StartTime / 1000.0;
             double prevStrainTime = 0;
@@ -333,7 +327,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 if (hitObjects[i-1] is Slider prevSlider)
                     virtualStrainTime = Math.Max((currTime - prevSlider.EndTime / 1000.0) / clockRate, 0.035);
 
-                double strain = strain_multiplier * StrainValueOf(hitObjects[i], strainTime, virtualStrainTime, prevStrainTime, prevVirtualStrainTime, tapStrainHistory[i]);
+                double strain = strain_multiplier * strainValueOf(hitObjects[i], strainTime, virtualStrainTime, prevStrainTime, prevVirtualStrainTime, tapStrainHistory[i]);
                 
                 if (i < hitObjects.Count - 1)
                 {
@@ -385,7 +379,13 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             for (int i = 0; i < hitObjects.Count; i++)
                 diff += strainHistoryArray[i] * Math.Pow(k, i);
 
-            return (diff * (1 - k), graphText, specificStrainHistory, hardStrainsAmount);
+            return new FingerAttributes
+            {
+                FingerDifficulty = diff * (1 - k),
+                StrainHistory = specificStrainHistory,
+                HardStrainAmount = hardStrainsAmount,
+                Graph = graphText
+            };
         }
     }
 }

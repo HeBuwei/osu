@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-
 using osu.Game.Rulesets.Osu.Objects;
 
 namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing

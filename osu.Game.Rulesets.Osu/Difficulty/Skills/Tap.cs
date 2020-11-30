@@ -5,13 +5,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-
 using MathNet.Numerics;
 using MathNet.Numerics.LinearAlgebra;
-
 using osu.Game.Rulesets.Osu.Difficulty.MathUtil;
 using osu.Game.Rulesets.Osu.Objects;
-
 
 namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 {
@@ -21,10 +18,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         private const int timescale_count = 4;
 
         /// <summary>
-        /// Decay coefficient for each timescale. 
+        /// Decay coefficient for each timescale.
         /// </summary>
         private static readonly Vector<double> decay_coeffs = Vector<double>.Build.Dense(Generate.LinearSpaced(timescale_count, 2.3, -2.8))
-                                                                                  .PointwiseExp();
+                                                                            .PointwiseExp();
+
         /// <summary>
         /// For each timescale, the strain result is multiplied by the corresponding factor in timescale_factors.
         /// </summary>
@@ -33,29 +31,38 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         /// <summary>
         /// Calculates attributes related to tapping difficulty.
         /// </summary>
-        public static (double, double, double, List<Vector<double>>, string) CalculateTapAttributes
-            (List<OsuHitObject> hitObjects, double clockRate)
+        public static TapAttributes CalculateTapAttributes(List<OsuHitObject> hitObjects, double clockRate)
         {
-            (var strainHistory, var tapDiff, var graphText) = calculateTapStrain(hitObjects, 0, clockRate);
+            var (strainHistory, tapDiff, graphText) = calculateTapStrain(hitObjects, 0, clockRate);
             double burstStrain = strainHistory.Max(v => v[0]);
 
             var streamnessMask = CalculateStreamnessMask(hitObjects, burstStrain, clockRate);
             double streamNoteCount = streamnessMask.Sum();
 
-            (_, var mashTapDiff, _) = calculateTapStrain(hitObjects, 1, clockRate);
+            var (_, mashTapDiff, _) = calculateTapStrain(hitObjects, 1, clockRate);
 
-            return (tapDiff, streamNoteCount, mashTapDiff, strainHistory, graphText);
+            return new TapAttributes
+            {
+                TapDifficulty = tapDiff,
+                StreamNoteCount = streamNoteCount,
+                MashedTapDifficulty = mashTapDiff,
+                StrainHistory = strainHistory,
+                Graph = graphText
+            };
         }
 
         /// <summary>
         /// Calculates the strain values at each note and the maximum strain values
         /// </summary>
         private static (List<Vector<double>>, double, string) calculateTapStrain(List<OsuHitObject> hitObjects,
-                                                                                 double mashLevel,
-                                                                                 double clockRate)
+                                                                         double mashLevel,
+                                                                         double clockRate)
         {
-            var strainHistory = new List<Vector<double>> { Vector<double>.Build.Dense(timescale_count),
-                                                           Vector<double>.Build.Dense(timescale_count) };
+            var strainHistory = new List<Vector<double>>
+            {
+                Vector<double>.Build.Dense(timescale_count),
+                Vector<double>.Build.Dense(timescale_count)
+            };
             var currStrain = Vector<double>.Build.Dense(timescale_count);
 
             var sw = new StringWriter();
@@ -77,7 +84,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
                     strainHistory.Add(currStrain.PointwisePower(1.1 / 3) * 1.5);
 
-                    double distance = (hitObjects[i].Position - hitObjects[i - 1].Position).Length / (2 * hitObjects[i].Radius);
+                    double distance = (hitObjects[i].StackedPosition - hitObjects[i - 1].StackedPosition).Length / (2 * hitObjects[i].Radius);
                     double spacedBuff = calculateSpacedness(distance) * spaced_buff_factor;
 
                     double deltaTime = Math.Max((currTime - prevPrevTime) / clockRate, 0.01);
@@ -149,6 +156,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                     streamnessMask[i] = 1 - SpecialFunctions.Logistic((t / streamTimeThreshold - 1) * 15);
                 }
             }
+
             return streamnessMask;
         }
 

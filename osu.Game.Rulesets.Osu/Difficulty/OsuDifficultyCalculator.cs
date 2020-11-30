@@ -4,8 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.IO;
-
 using osu.Game.Beatmaps;
 using osu.Game.Rulesets.Difficulty;
 using osu.Game.Rulesets.Difficulty.Preprocessing;
@@ -18,6 +16,7 @@ using osu.Game.Rulesets.Osu.Objects;
 using osu.Game.Rulesets.Osu.Difficulty.MathUtil;
 using osu.Game.Rulesets.Osu.Scoring;
 using osu.Game.Rulesets.Scoring;
+using System.IO;
 
 namespace osu.Game.Rulesets.Osu.Difficulty
 {
@@ -25,7 +24,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
     {
         private const double aim_multiplier = 0.641;
         private const double tap_multiplier = 0.641;
-        private const double finger_control_multiplier = 1.245;
+        private const double finger_control_multiplier = 1.8;
         private const double reading_multiplier = 1.3;
 
         private const double sr_exponent = 0.83;
@@ -55,27 +54,24 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double preempt = (int)BeatmapDifficulty.DifficultyRange(beatmap.BeatmapInfo.BaseDifficulty.ApproachRate, 1800, 1200, 450) / clockRate;
 
             // Tap
-            (var tapDiff, var streamNoteCount, var mashTapDiff, var strainHistory, string graphTextTap) =
-                Tap.CalculateTapAttributes(hitObjects, clockRate);
+            var tapAttributes = Tap.CalculateTapAttributes(hitObjects, clockRate);
 
             // Finger Control
-            (double fingerControlDiff, string fingerGraph, List<double> fingerStrainHistory, int hardFingerStrainAmount) = new FingerControl().CalculateFingerControlDiff(hitObjects, clockRate, strainHistory, hitWindowGreat);
+            var fingerAttributes = new FingerControl().CalculateFingerControlDiff(hitObjects, clockRate, tapAttributes.StrainHistory, hitWindowGreat);
 
             // Reading
             var (readingDiff, readingGraph) = Reading.CalculateReadingDiff(hitObjects, noteDensitiesVisible, fingerStrainHistory, clockRate, mods.Any(x=> x.GetType() == typeof(OsuModHidden)));
 
             // Aim
-            (var aimDiff, var aimHiddenFactor, var comboTps, var missTps, var missCounts,
-             var cheeseNoteCount, var cheeseLevels, var cheeseFactors, var graphText) =
-                Aim.CalculateAimAttributes(hitObjects, clockRate, strainHistory, noteDensities);
+            var aimAttributes = Aim.CalculateAimAttributes(hitObjects, clockRate, tapAttributes.StrainHistory, noteDensities);
 
             // graph for aim
             string graphFilePath = Path.Combine("cache", $"graph_{beatmap.BeatmapInfo.OnlineBeatmapID}_{string.Join(string.Empty, mods.Select(x => x.Acronym))}.txt");
-            File.WriteAllText(graphFilePath, graphText);
+            File.WriteAllText(graphFilePath, aimAttributes.Graph);
 
             // graph for tap
             string graphFilePathTap = Path.Combine("cache", $"graph_{beatmap.BeatmapInfo.OnlineBeatmapID}_{string.Join(string.Empty, mods.Select(x => x.Acronym))}_tap.txt");
-            File.WriteAllText(graphFilePathTap, graphTextTap);
+            File.WriteAllText(graphFilePathTap, tapAttributes.Graph);
 
             // graph for finger
             string graphFingerFilePath = Path.Combine("cache", $"graph_{beatmap.BeatmapInfo.OnlineBeatmapID}_{string.Join(string.Empty, mods.Select(x => x.Acronym))}_finger.txt");
@@ -85,12 +81,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             string graphReadingFilePath = Path.Combine("cache", $"graph_{beatmap.BeatmapInfo.OnlineBeatmapID}_{string.Join(string.Empty, mods.Select(x => x.Acronym))}_reading.txt");
             File.WriteAllText(graphReadingFilePath, readingGraph);
 
-            double tapSr = tap_multiplier * Math.Pow(tapDiff, sr_exponent);
-            double aimSr = aim_multiplier * Math.Pow(aimDiff, sr_exponent);
-            double fingerControlSr = finger_control_multiplier * Math.Pow(fingerControlDiff, sr_exponent);
+            double tapSr = tap_multiplier * Math.Pow(tapAttributes.TapDifficulty, sr_exponent);
+            double aimSr = aim_multiplier * Math.Pow(aimAttributes.FcProbabilityThroughput, sr_exponent);
+            double fingerControlSr = finger_control_multiplier * Math.Pow(fingerAttributes.FingerDifficulty, sr_exponent);
             double readingSr = reading_multiplier * Math.Pow(readingDiff, sr_exponent);
 
-            double sr = Mean.PowerMean(new[] { tapSr, aimSr, fingerControlSr, readingSr }, 7) * 1.131;
+            double sr = Mean.PowerMean(new[] { tapSr, aimSr, fingerControlSr, readingSr }, 6.5) * 1.131;
 
             int maxCombo = beatmap.HitObjects.Count;
             // Add the ticks + tail of the slider. 1 is subtracted because the head circle would be counted twice (once for the slider itself in the line above)
@@ -103,33 +99,32 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 Length = mapLength,
 
                 TapSr = tapSr,
-                TapDiff = tapDiff,
-                StreamNoteCount = streamNoteCount,
-                MashTapDiff = mashTapDiff,
+                TapDiff = tapAttributes.TapDifficulty,
+                StreamNoteCount = tapAttributes.StreamNoteCount,
+                MashTapDiff = tapAttributes.MashedTapDifficulty,
 
                 FingerControlSr = fingerControlSr,
-                FingerControlDiff = fingerControlDiff,
-                FingerControlHardStrains = hardFingerStrainAmount,
+                FingerControlDiff = fingerAttributes.FingerDifficulty,
+                FingerControlHardStrains = fingerAttributes.HardStrainAmount,
 
                 ReadingSr = readingSr,
                 ReadingDiff = readingDiff,
 
                 AimSr = aimSr,
-                AimDiff = aimDiff,
-                AimHiddenFactor = aimHiddenFactor,
-                ComboTps = comboTps,
-                MissTps = missTps,
-                MissCounts = missCounts,
-                CheeseNoteCount = cheeseNoteCount,
-                CheeseLevels = cheeseLevels,
-                CheeseFactors = cheeseFactors,
+                AimDiff = aimAttributes.FcProbabilityThroughput,
+                AimHiddenFactor = aimAttributes.HiddenFactor,
+                ComboTps = aimAttributes.ComboThroughputs,
+                MissTps = aimAttributes.MissThroughputs,
+                MissCounts = aimAttributes.MissCounts,
+                CheeseNoteCount = aimAttributes.CheeseNoteCount,
+                CheeseLevels = aimAttributes.CheeseLevels,
+                CheeseFactors = aimAttributes.CheeseFactors,
 
                 ApproachRate = preempt > 1200 ? (1800 - preempt) / 120 : (1200 - preempt) / 150 + 5,
                 OverallDifficulty = (80 - hitWindowGreat) / 6,
                 MaxCombo = maxCombo
             };
         }
-
 
         protected override Skill[] CreateSkills(IBeatmap beatmap)
         {
