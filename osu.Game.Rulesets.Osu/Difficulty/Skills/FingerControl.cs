@@ -36,11 +36,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         {
             if (strain1 == 0 || strain2 == 0)
                 return 1;
+
             double fraction = Math.Max(strain1 / strain2, strain2 / strain1);
-            var res = fractionSpline.Interpolate(fraction);
-            if (res < 0) // spline can sometimes dip below 0 which breaks everything 
-                res = 0;
-            return res;
+            return Math.Max(0.0, fractionSpline.Interpolate(fraction)); // spline can sometimes dip below 0 which breaks everything 
         }
 
         private (double, bool) checkAnomaly(List<double> refNoteHistory)
@@ -89,10 +87,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 }
             }
             
-            if (!unique)
-                return ((double)uniqueStrains.Count, true);
 
-            return ((double)uniqueStrains.Count, false); 
+            return ((double)uniqueStrains.Count, !unique);
         }
 
         private double calculateExpectancy(List<double> refNoteHistory)
@@ -304,7 +300,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             List<double> strainHistory = new List<double> { 0 };
             List<double> specificStrainHistory = new List<double> { 0 };
             var sw = new StringWriter();
-            sw.WriteLine($"{hitObjects[1].StartTime / 1000.0} 0 0");
+            sw.WriteLine($"{hitObjects[0].StartTime / 1000.0} 0 0");
 
             var hardStrainsAmount = 0;
 
@@ -318,7 +314,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
                 double strainTime = Math.Max(deltaTime, 0.035);
                 double virtualStrainTime = strainTime;
-                double strainDecayBase = Math.Pow(0.75, 1 / Math.Min(strainTime, 0.2));
+                double strainDecayBase = Math.Pow(0.75, 1 / Math.Min(strainTime, 0.15));
 
                 currStrain *= Math.Pow(strainDecayBase, deltaTime);
 
@@ -345,6 +341,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                         multiplier /= 2;
 
                     strain *= multiplier;
+                }
+                else
+                {
+                    // last object strain can get too big because of lack of next object multiplier so we make it very low
+                    strain *= 0.05;
                 }
 
                 specificStrainHistory.Add(strain);
