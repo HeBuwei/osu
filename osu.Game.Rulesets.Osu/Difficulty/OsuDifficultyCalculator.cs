@@ -60,7 +60,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             var fingerAttributes = new FingerControl().CalculateFingerControlDiff(hitObjects, clockRate, tapAttributes.StrainHistory, hitWindowGreat);
 
             // Reading
-            var (readingDiff, readingGraph) = Reading.CalculateReadingDiff(hitObjects, noteDensitiesVisible, fingerStrainHistory, clockRate, mods.Any(x=> x.GetType() == typeof(OsuModHidden)));
+            var (readingDiff, readingGraph) = Reading.CalculateReadingDiff(hitObjects, noteDensitiesVisible, fingerAttributes.StrainHistory, clockRate, mods.Any(x=> x.GetType() == typeof(OsuModHidden)));
 
             // Aim
             var aimAttributes = Aim.CalculateAimAttributes(hitObjects, clockRate, tapAttributes.StrainHistory, noteDensities);
@@ -75,7 +75,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
 
             // graph for finger
             string graphFingerFilePath = Path.Combine("cache", $"graph_{beatmap.BeatmapInfo.OnlineBeatmapID}_{string.Join(string.Empty, mods.Select(x => x.Acronym))}_finger.txt");
-            File.WriteAllText(graphFingerFilePath, fingerGraph);
+            File.WriteAllText(graphFingerFilePath, fingerAttributes.Graph);
 
             // graph for reading
             string graphReadingFilePath = Path.Combine("cache", $"graph_{beatmap.BeatmapInfo.OnlineBeatmapID}_{string.Join(string.Empty, mods.Select(x => x.Acronym))}_reading.txt");
