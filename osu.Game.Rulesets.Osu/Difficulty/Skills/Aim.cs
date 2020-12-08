@@ -136,23 +136,58 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             if (hitObjects.Count == 0)
                 return movements;
 
+            var hitObjectsWithNested = new List<OsuHitObject>();
+            var strainHistoryWithNested = new List<Vector<double>>();
+            var noteDensitiesWithNested = new List<double>();
+
+            for (int i = 0; i < hitObjects.Count; i++)
+            {
+                var obj = hitObjects[i];
+                if (obj.NestedHitObjects.Count > 0)
+                {
+                    foreach(var nested in obj.NestedHitObjects)
+                    {
+                        if (!(nested is SliderTailCircle))
+                        {
+                            hitObjectsWithNested.Add(obj);
+
+                            if (nested is SliderHeadCircle)
+                                strainHistoryWithNested.Add(strainHistory[i]);
+                            else
+                                strainHistoryWithNested.Add(Vector<double>.Build.Dense(4)); // zero tap strain for slider parts
+
+                            if (noteDensities != null)
+                                noteDensitiesWithNested.Add(noteDensities[i]);
+                        }
+                    }
+                }
+                else
+                {
+                    hitObjectsWithNested.Add(obj);
+                    strainHistoryWithNested.Add(strainHistory[i]);
+                    if (noteDensities != null)
+                        noteDensitiesWithNested.Add(noteDensities[i]);
+                }
+                
+            }
+
             // the first object
-            movements.AddRange(OsuMovement.ExtractMovement(hitObjects[0]));
+            movements.AddRange(OsuMovement.ExtractMovement(hitObjectsWithNested[0]));
 
             // the rest
-            for (int i = 1; i < hitObjects.Count; i++)
+            for (int i = 1; i < hitObjectsWithNested.Count; i++)
             {
-                var objNeg4 = i > 3 ? hitObjects[i - 4] : null;
-                var objNeg2 = i > 1 ? hitObjects[i - 2] : null;
-                var objPrev = hitObjects[i - 1];
-                var objCurr = hitObjects[i];
-                var objNext = i < hitObjects.Count - 1 ? hitObjects[i + 1] : null;
-                var tapStrain = strainHistory[i];
+                var objNeg4 = i > 3 ? hitObjectsWithNested[i - 4] : null;
+                var objNeg2 = i > 1 ? hitObjectsWithNested[i - 2] : null;
+                var objPrev = hitObjectsWithNested[i - 1];
+                var objCurr = hitObjectsWithNested[i];
+                var objNext = i < hitObjectsWithNested.Count - 1 ? hitObjectsWithNested[i + 1] : null;
+                var tapStrain = strainHistoryWithNested[i];
 
                 if (hidden)
                 {
                     movements.AddRange(OsuMovement.ExtractMovement(objNeg2, objPrev, objCurr, objNext, tapStrain, clockRate,
-                        hidden: true, noteDensity: noteDensities[i], objNeg4: objNeg4));
+                        hidden: true, noteDensity: noteDensitiesWithNested[i], objNeg4: objNeg4));
                 }
                 else
                     movements.AddRange(OsuMovement.ExtractMovement(objNeg2, objPrev, objCurr, objNext, tapStrain, clockRate, objNeg4: objNeg4));
