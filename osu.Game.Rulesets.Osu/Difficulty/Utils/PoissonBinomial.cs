@@ -10,18 +10,18 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Utils
 {
     /// <summary>
     /// Approximation of the Poisson binomial distribution:
-    /// https://en.wikipedia.org/wiki/Poisson_binomial_distribution
+    /// <see href="https://en.wikipedia.org/wiki/Poisson_binomial_distribution"/>
     /// </summary>
     /// <remarks>
     /// <para>
     /// For the approximation method, see "Refined Normal Approximation (RNA)" from:
     /// Hong, Y. (2013). On computing the distribution function for the Poisson binomial distribution. Computational Statistics and Data Analysis, Vol. 59, pp. 41-51.
-    /// (https://www.researchgate.net/publication/257017356_On_computing_the_distribution_function_for_the_Poisson_binomial_distribution)
+    /// (<see href="https://www.researchgate.net/publication/257017356_On_computing_the_distribution_function_for_the_Poisson_binomial_distribution"/>)
     /// </para>
     /// <para>
     /// This has been verified against a reference implementation provided by the authors in the R package "poibin",
     /// which can be viewed here:
-    /// https://rdrr.io/cran/poibin/man/poibin-package.html
+    /// <see href="https://rdrr.io/cran/poibin/man/poibin-package.html"/>
     /// </para>
     /// </remarks>
     internal class PoissonBinomial

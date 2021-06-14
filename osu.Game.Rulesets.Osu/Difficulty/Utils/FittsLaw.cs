@@ -10,7 +10,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Utils
     /// Helper methods related to Fitts's law - a model of human-computer interaction.
     /// Fitts's law aims to approximate human performance in a task of moving the cursor pointer
     /// to a target on the screen.
-    /// https://en.wikipedia.org/wiki/Fitts%27s_law
+    /// <see href="https://en.wikipedia.org/wiki/Fitts%27s_law"/>
     /// </summary>
     internal static class FittsLaw
     {
@@ -35,7 +35,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Utils
         /// </summary>
         /// <remarks>
         /// Model as proposed by Wobbrock, Cutrell, Harada, and MacKenzie:
-        /// https://www.microsoft.com/en-us/research/wp-content/uploads/2008/04/CHI2008-Error-Model-for-Pointing.pdf
+        /// <see href="https://www.microsoft.com/en-us/research/wp-content/uploads/2008/04/CHI2008-Error-Model-for-Pointing.pdf"/>
         /// </remarks>
         /// <param name="distance">The distance to the target point of the movement (relative to its width).</param>
         /// <param name="movementTime">The time taken to perform the movement.</param>
