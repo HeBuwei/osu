@@ -8,7 +8,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Utils
 {
     /// <summary>
     /// Helper methods to calculate the power mean of N numbers:
-    /// https://mathworld.wolfram.com/PowerMean.html
+    /// <see href="https://mathworld.wolfram.com/PowerMean.html"/>
     /// </summary>
     internal static class PowerMean
     {

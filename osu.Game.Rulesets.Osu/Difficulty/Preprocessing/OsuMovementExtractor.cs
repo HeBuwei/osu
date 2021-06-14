@@ -132,8 +132,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
 
         /// <summary>
         /// Correction #1 - The Previous Object
-        /// Estimate how second-last object placement affects the difficulty of hitting current object.
         /// </summary>
+        /// <remarks>
+        /// Estimate how second-last object placement affects the difficulty of hitting current object.
+        /// </remarks>
         private static double calculatePreviousObjectPlacementCorrection(MovementExtractionParameters p)
         {
             if (p.SecondLastObject == null || p.LastToCurrent.RelativeLength == 0)
@@ -182,8 +184,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
 
         /// <summary>
         /// Correction #2 - The Next Object
-        /// Estimate how next object placement affects the difficulty of hitting current object.
         /// </summary>
+        /// <remarks>
+        /// Estimate how next object placement affects the difficulty of hitting current object.
+        /// </remarks>
         private static double calculateNextObjectPlacementCorrection(MovementExtractionParameters p)
         {
             if (p.NextObject == null || p.LastToCurrent.RelativeLength == 0)
@@ -232,9 +236,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
 
         /// <summary>
         /// Correction #3 - 4-object pattern
+        /// </summary>
+        /// <remarks>
         /// Estimate how the whole pattern consisting of second-last to next objects affects the difficulty of hitting current object.
         /// This only takes effect when the pattern is not so spaced (i.e. does not contain jumps)
-        /// </summary>
+        /// </remarks>
         private static double calculateFourObjectPatternCorrection(MovementExtractionParameters p)
         {
             if (!p.LastObjectTemporallyCenteredBetweenNeighbours ||
@@ -252,8 +258,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
 
         /// <summary>
         /// Correction #4 - Tap Strain
-        /// This buffs current object's aim difficulty rating by tap difficulty when distance is bigger than 0.
         /// </summary>
+        /// <remarks>
+        /// This buffs current object's aim difficulty rating by tap difficulty when distance is bigger than 0.
+        /// </remarks>
         private static double calculateTapStrainBuff(double tapStrain, OsuObjectPair lastToCurrent, double movementThroughput)
         {
             if (!(lastToCurrent.RelativeLength > 0))
@@ -266,9 +274,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
 
         /// <summary>
         /// Correction #5 - Cheesing
+        /// </summary>
+        /// <remarks>
         /// The player might make the movement from previous object to current easier by hitting former early and latter late.
         /// Here we estimate the amount of such cheesing to update MovementTime accordingly.
-        /// </summary>
+        /// </remarks>
         private static void calculateCheeseWindow(MovementExtractionParameters p, double movementThroughput)
         {
             double timeEarly = 0;
@@ -323,8 +333,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
 
         /// <summary>
         /// Correction #6 - High bpm jump buff (alt buff)
-        /// High speed (300 bpm+) jumps are underweighted by fitt's law so we're correting for it here.
         /// </summary>
+        /// <remarks>
+        /// High speed (300 bpm+) jumps are underweighted by fitt's law so we're correting for it here.
+        /// </remarks>
         private static double calculateHighBPMJumpBuff(MovementExtractionParameters p)
         {
             var bpmCutoff = SpecialFunctions.Logistic((p.EffectiveBPM - 354) / 16.0);
@@ -336,9 +348,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
 
         /// <summary>
         /// Correction #7 - Small circle bonus
-        /// Small circles (CS 6.5+) are underweighted by fitt's law so we're correting for it here.
-        /// Graphs: https://www.desmos.com/calculator/u6rjndtklb
         /// </summary>
+        /// <remarks>
+        /// Small circles (CS 6.5+) are underweighted by fitt's law so we're correting for it here.
+        /// Graphs: <see href="https://www.desmos.com/calculator/u6rjndtklb"/>
+        /// </remarks>
         private static double calculateSmallCircleBuff(MovementExtractionParameters p)
         {
             // we only want to buff radiuses starting from about 35 (CS 4 radius is 36.48)
@@ -354,8 +368,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
 
         /// <summary>
         /// Correction #8 - Stacked notes nerf
-        /// We apply a nerf to the difficulty depending on how much objects overlap.
         /// </summary>
+        /// <remarks>
+        /// We apply a nerf to the difficulty depending on how much objects overlap.
+        /// </remarks>
         private static double calculateStackedNoteNerf(OsuObjectPair lastToCurrent)
         {
             return Math.Max(0,
@@ -367,9 +383,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
 
         /// <summary>
         /// Correction #9 - Slow small jump nerf
-        /// We apply nerf to jumps within ~1-3.5 distance (with peak at 2.2) depending on BPM.
-        /// Graphs: https://www.desmos.com/calculator/lbwtkv1qom
         /// </summary>
+        /// <remarks>
+        /// We apply nerf to jumps within ~1-3.5 distance (with peak at 2.2) depending on BPM.
+        /// Graphs: <see href="https://www.desmos.com/calculator/lbwtkv1qom"/>
+        /// </remarks>
+
         private static double calculateSmallJumpNerf(MovementExtractionParameters p)
         {
             // this applies nerf up to 300 bpm and starts deminishing it at ~200 bpm
@@ -382,9 +401,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
 
         /// <summary>
         /// Correction #10 - Slow big jump buff
-        /// We apply buff to jumps with distance starting from ~4 on low BPMs.
-        /// Graphs: https://www.desmos.com/calculator/fmewz0foql
         /// </summary>
+        /// <remarks>We apply buff to jumps with distance starting from ~4 on low BPMs.
+        /// Graphs: <see href="https://www.desmos.com/calculator/fmewz0foql"/>
+        /// </remarks>
         private static double calculateBigJumpBuff(MovementExtractionParameters p)
         {
             // this applies buff up until ~250 bpm
@@ -397,8 +417,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
 
         /// <summary>
         /// Correction #11 - Hidden Mod
-        /// We apply slight bonus when using HD depending on current visual note density.
         /// </summary>
+        /// <remarks>
+        /// We apply slight bonus when using HD depending on current visual note density.
+        /// </remarks>
         private static double calculateHiddenCorrection(bool hidden, double noteDensity)
         {
             // Correction #11 - Hidden Mod
@@ -410,9 +432,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
 
         /// <summary>
         /// Correction #12 - Stacked wiggle fix
+        /// </summary>
+        /// <remarks>
         /// If distance between each 4 objects is less than 1 (meaning they overlap) reset all angle corrections as well as tap correction.
         /// This fixes "wiggles" (usually a stream of objects that are placed in a zig-zag pattern that can be aimed in a straight line by going through overlapped places)
-        /// </summary>
+        /// </remarks>
         private static bool isStackedWiggle(MovementExtractionParameters p)
         {
             if (p.SecondLastObject == null || p.NextObject == null)
@@ -428,13 +452,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
 
         /// <summary>
         /// Correction #13 - Repetitive jump nerf
-        /// We apply a nerf to big jumps where second-last or fourth-last and current objects are close.
+        /// </summary>
+        /// <remarks>We apply a nerf to big jumps where second-last or fourth-last and current objects are close.
         /// This mainly targets repeating jumps such as
         /// 1  3
         ///  \/
         ///  /\
         /// 4  2
-        /// </summary>
+        /// </remarks>
         private static double calculateJumpOverlapCorrection(MovementExtractionParameters p)
         {
             var secondLastToCurrentNerf = Math.Max(0.15 - 0.1 * p.SecondLastToCurrent?.RelativeLength ?? 0.0, 0.0);
