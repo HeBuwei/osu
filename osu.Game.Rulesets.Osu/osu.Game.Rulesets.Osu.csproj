@@ -6,7 +6,7 @@
     <Description>click the circles. to the beat.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MathNet.Numerics" Version="4.7.0" />
+    <PackageReference Include="MathNet.Numerics" Version="4.15.0" />
   </ItemGroup>
 
   <PropertyGroup Label="Nuget">
